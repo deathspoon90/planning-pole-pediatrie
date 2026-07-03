@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planning Pôle Maternité</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;font-size:13px;background:#f0f0f0;color:#222}
+:root{--blue:#1a5fa8;--blue-lt:#dbeafe;--blue-dk:#0f3d7a;--green:#15803d;--red:#b91c1c;--border:#ccc;--we-bg:#fff8e6;--ferie-bg:#ffe4e4;}
+#nav{background:var(--blue-dk);display:flex;align-items:stretch;flex-wrap:wrap}
+#nav .logo{padding:10px 18px;font-size:15px;font-weight:700;color:#fff;border-right:1px solid rgba(255,255,255,0.15)}
+#nav button{background:none;border:none;color:rgba(255,255,255,0.8);padding:10px 14px;cursor:pointer;font-size:13px;border-right:1px solid rgba(255,255,255,0.1)}
+#nav button:hover,#nav button.active{background:rgba(255,255,255,0.15);color:#fff}
+#nav .nav-right{margin-left:auto;display:flex;align-items:center}
+#save-status{padding:6px 12px;font-size:12px;color:rgba(255,255,255,0.7)}
+#save-status.saving{color:#fbbf24}#save-status.saved{color:#86efac}#save-status.error{color:#fca5a5}
+.page{display:none;padding:14px 16px}.page.active{display:block}
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.toolbar select,.toolbar input{border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:13px;background:#fff}
+.btn{padding:5px 12px;border-radius:4px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:5px}
+.btn:hover{background:#f0f0f0}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}.btn-primary:hover{background:var(--blue-dk)}
+.btn-danger{background:var(--red);color:#fff;border-color:var(--red)}
+.btn-success{background:var(--green);color:#fff;border-color:var(--green)}
+.btn-warn{background:#d97706;color:#fff;border-color:#d97706}
+.btn-archive{background:#6b7280;color:#fff;border-color:#6b7280}.btn-archive:hover{background:#4b5563}
+.btn-sm{padding:3px 8px;font-size:12px}
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;visibility:hidden;opacity:0;pointer-events:none;transition:opacity 0.2s;z-index:2000}
+.modal-overlay.open{visibility:visible;opacity:1;pointer-events:auto}
+#save-overlay{background:rgba(0,0,0,0.55)}
+#login-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,30,70,0.92);display:flex;align-items:center;justify-content:center;z-index:9999;}
+#login-box{background:#fff;border-radius:12px;min-width:360px;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,0.35);overflow:hidden;}
+#login-box .login-head{background:var(--blue);color:#fff;padding:24px 28px;text-align:center;}
+#login-box .login-head h2{margin:0 0 4px;font-size:18px;}
+#login-box .login-head p{margin:0;font-size:12px;opacity:0.8;}
+#login-box .login-body{padding:24px 28px;}
+#login-box .login-body label{display:block;font-size:12px;font-weight:700;color:#555;margin-bottom:4px;margin-top:14px;}
+#login-box .login-body input{width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;transition:border-color 0.15s;}
+#login-box .login-body input:focus{outline:none;border-color:var(--blue);}
+#login-box .login-btn{width:100%;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:7px;font-size:14px;font-weight:700;cursor:pointer;margin-top:20px;transition:background 0.15s;}
+#login-box .login-btn:hover{background:#1a5fa8;}
+#login-error{color:#dc2626;font-size:12px;margin-top:10px;text-align:center;min-height:18px;}
+#pwd-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:9998;align-items:center;justify-content:center;}
+#pwd-modal.open{display:flex;}
+#pwd-box{background:#fff;border-radius:10px;min-width:340px;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.25);overflow:hidden;}
+#pwd-box .pwd-head{background:var(--blue);color:#fff;padding:16px 20px;font-weight:700;font-size:14px;}
+#pwd-box .pwd-body{padding:20px;}
+#pwd-box .pwd-body label{display:block;font-size:12px;font-weight:700;color:#555;margin-bottom:4px;margin-top:12px;}
+#pwd-box .pwd-body input{width:100%;padding:8px 11px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;}
+#pwd-box .pwd-body input:focus{outline:none;border-color:var(--blue);}
+#pwd-error{color:#dc2626;font-size:12px;margin-top:8px;min-height:16px;}
+#pwd-success{color:#16a34a;font-size:12px;margin-top:8px;min-height:16px;}
+#save-box{background:#fff;border-radius:10px;width:420px;max-width:95vw;box-shadow:0 8px 40px rgba(0,0,0,0.25);overflow:hidden}
+.sv-head{background:linear-gradient(135deg,#15803d,#166534);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:10px}
+.sv-head h2{font-size:16px;margin:0}.sv-body{padding:18px 20px}.sv-foot{padding:10px 20px 18px;display:flex;justify-content:flex-end;gap:10px}
+#modal-overlay{background:rgba(0,0,0,0.45)}
+#modal-box{background:#fff;border-radius:8px;min-width:360px;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 4px 24px rgba(0,0,0,0.2)}
+.modal-head{background:var(--blue);color:#fff;padding:12px 16px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1}
+.modal-body{padding:16px}
+.modal-foot{padding:10px 16px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:8px;background:#fff;position:sticky;bottom:0}
+.act-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+.planning-wrap{overflow-x:auto}
+table.planning{border-collapse:collapse;background:#fff;table-layout:auto}
+table.planning th,table.planning td{border:1px solid #bbb;padding:2px 3px;white-space:nowrap;font-size:11.5px;vertical-align:middle}
+table.planning th{background:#1a5fa8;color:#fff;text-align:center;font-weight:600;position:sticky;top:0;z-index:2}
+table.planning th.th-name{background:#2c4a72;width:90px;position:sticky;left:0;z-index:3}
+table.planning td.td-name{font-weight:600;background:#e8edf5;position:sticky;left:0;z-index:1;width:90px;white-space:normal;font-size:11px}
+table.planning .th-day{font-size:11px;font-weight:600}
+table.planning .th-day.we{background:#b45309}
+table.planning .th-day.ferie{background:#991b1b}
+table.planning .th-slot{font-size:10px;font-weight:400;min-width:28px}
+table.planning .th-slot.we{background:#c2680e}
+table.planning .th-slot.ferie{background:#b91c1c}
+table.planning .th-slot.inactive{background:#9ca3af;font-style:italic;opacity:0.8}
+table.planning tr.data-row td{height:24px}
+table.planning .cell{text-align:center;cursor:pointer;min-width:28px;max-width:72px;overflow:hidden}
+table.planning .cell:hover{filter:brightness(0.88)}
+table.planning .cell.we{background:var(--we-bg)}
+table.planning .cell.ferie{background:var(--ferie-bg)}
+table.planning .cell.vac-sco{background:#ede9fe}
+table.planning td.we.vac-sco{background:#e0d9f5}
+table.planning td.ferie.vac-sco{background:#ffe4e4}
+table.planning .cell.slot-inactive{background:#f3f4f6;cursor:default;color:#9ca3af}
+table.planning .cell.slot-inactive:hover{filter:none}
+table.planning td.note-global{background:#fffde7;font-size:11px;color:#555;white-space:normal;word-break:break-word;padding:3px 6px;cursor:text}
+table.planning td.note-global.we{background:#fff3cd}
+table.planning td.note-global.ferie{background:#ffd5d5}
+.badge{display:inline-block;padding:1px 4px;border-radius:3px;font-size:10px;font-weight:700;white-space:nowrap;max-width:70px;overflow:hidden;text-overflow:ellipsis}
+table.totaux{border-collapse:collapse;background:#fff;margin-top:14px;width:100%}
+table.totaux th,table.totaux td{border:1px solid #bbb;padding:3px 7px;font-size:12px;text-align:center}
+table.totaux th{background:#2c4a72;color:#fff;font-weight:600}
+table.totaux td.td-name{text-align:left;font-weight:600;background:#e8edf5;position:sticky;left:0;white-space:nowrap}
+table.totaux tr:nth-child(even) td{background:#f9f9f9}
+table.totaux tr:nth-child(even) td.td-name{background:#dce4f0}
+table.garde{border-collapse:collapse;background:#fff;width:100%}
+table.garde th,table.garde td{border:1px solid #bbb;padding:3px 8px;font-size:12px}
+table.garde th{background:#2c4a72;color:#fff;text-align:center}
+table.garde td.day-we{background:var(--we-bg)}
+table.garde td.day-ferie{background:var(--ferie-bg)}
+.tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;font-weight:600}
+.conf-section{background:#fff;border:1px solid #ddd;border-radius:6px;padding:14px;margin-bottom:14px}
+.conf-section h3{font-size:13px;font-weight:700;margin-bottom:10px;color:var(--blue-dk)}
+.form-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.form-row label{min-width:100px;font-size:12px;color:#444}
+.form-row input,.form-row select{border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:12px;flex:1;min-width:90px}
+.member-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px;margin-top:6px}
+.member-item{background:#f5f7fa;border:1px solid #ddd;border-radius:4px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.member-item.archived-item{background:#f3f4f6;border-color:#d1d5db;opacity:0.85}
+.presence-tag{display:inline-block;font-size:10px;padding:1px 5px;border-radius:3px;background:#dbeafe;color:#1e3a8a;margin-top:2px;font-weight:600}
+.presence-tag.ended{background:#fee2e2;color:#991b1b}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.stat-card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:12px;text-align:center}
+.stat-card .val{font-size:22px;font-weight:700;color:var(--blue)}.stat-card .lbl{font-size:11px;color:#666;margin-top:2px}
+table.decl{border-collapse:collapse;background:#fff;width:100%}
+table.decl th,table.decl td{border:1px solid #bbb;padding:4px 8px;font-size:12px}
+table.decl th{background:#2c4a72;color:#fff;text-align:center}
+table.decl tr:nth-child(even) td{background:#f9f9f9}
+#phone-list{display:block;margin-top:16px;font-size:12px;border-top:2px solid #555;padding-top:10px}
+table.services{border-collapse:collapse;background:#fff;width:100%;font-size:11px}
+table.services th,table.services td{border:1px solid #bbb;padding:2px 4px;vertical-align:top}
+table.services th{background:#2c4a72;color:#fff;text-align:center;font-weight:600}
+table.services td.td-jour{font-weight:600;background:#e8edf5;white-space:nowrap;width:40px}
+table.services td.td-num{background:#f0f4ff;text-align:center;font-weight:700;width:24px}
+table.services td.we{background:#fff8e6}table.services td.ferie{background:#ffe4e4}
+table.services td.vac-sco{background:#ede9fe!important}
+table.services td.cell-srv{font-size:10px;min-width:40px;line-height:1.4;word-break:break-word;white-space:normal}
+table.services td.cell-info{font-size:10px;font-style:italic;color:#555;min-width:80px;max-width:140px}
+.init-badge{display:inline-block;margin:1px 2px 1px 0;padding:0px 3px;border-radius:2px;font-size:9px;font-weight:600;white-space:nowrap;line-height:1.4}
+.icon-picker-wrap{position:relative;display:inline-block;vertical-align:middle}
+.icon-picker-btn{font-size:18px;padding:3px 10px;border:1px solid var(--border);border-radius:4px;background:#fff;cursor:pointer;min-width:46px;text-align:center;line-height:1.5}
+.icon-picker-popup{display:none;position:absolute;z-index:600;background:#fff;border:1px solid #ccc;border-radius:8px;box-shadow:0 6px 28px rgba(0,0,0,0.18);padding:12px 14px;width:292px;top:calc(100% + 6px);left:0;max-height:340px;overflow-y:auto}
+.icon-picker-popup.open{display:block}
+.ip-cat-label{font-size:10px;font-weight:700;color:#888;margin:10px 0 5px;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #eee;padding-bottom:3px}
+.ip-cat-label:first-child{margin-top:0}
+.ip-grid{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:2px}
+.ip-icon{font-size:18px;padding:4px 6px;border-radius:5px;cursor:pointer;border:1.5px solid transparent;user-select:none;line-height:1}
+.ip-icon:hover{background:#f0f0f0;border-color:#ddd}
+.ip-icon.selected{background:#dbeafe;border-color:#1a5fa8}
+.arch-badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db}
+.slot-item{background:#f5f7fa;border:1px solid #ddd;border-radius:4px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px}
+.garde-table-card{border-radius:6px;padding:10px 14px;margin-bottom:8px;border:1px solid #ddd}
+@media print{#nav,.toolbar,.no-print{display:none!important}.page{display:block!important;padding:0}body{background:#fff}table{font-size:10px}.planning-wrap{overflow:visible}}
+</style>
+</head>
+<body>
+
+<div id="pwd-modal">
+  <div id="pwd-box">
+    <div class="pwd-head">🔑 Changer mon mot de passe</div>
+    <div class="pwd-body">
+      <label>Mot de passe actuel</label>
+      <input type="password" id="pwd-old" autocomplete="current-password">
+      <label>Nouveau mot de passe</label>
+      <input type="password" id="pwd-new" autocomplete="new-password">
+      <label>Confirmer le nouveau mot de passe</label>
+      <input type="password" id="pwd-confirm" autocomplete="new-password" onkeydown="if(event.key==='Enter')doChangePassword()">
+      <div id="pwd-error"></div>
+      <div id="pwd-success"></div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn btn-primary" onclick="doChangePassword()" style="flex:1">Valider</button>
+        <button class="btn" onclick="closePwdModal()" style="flex:1">Annuler</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="login-overlay">
+  <div id="login-box">
+    <div class="login-head">
+      <h2>🏥 Planning Pôle Maternité</h2>
+      <p>Connectez-vous pour accéder au planning</p>
+    </div>
+    <div class="login-body">
+      <label>Identifiant</label>
+      <input type="text" id="login-input" autocomplete="username">
+      <label>Mot de passe</label>
+      <input type="password" id="password-input" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      <div id="login-error"></div>
+      <button class="login-btn" onclick="doLogin()">Se connecter</button>
+    </div>
+  </div>
+</div>
+
+<div id="save-overlay" class="modal-overlay">
+  <div id="save-box">
+    <div class="sv-head"><span style="font-size:24px">💾</span><h2>Exporter la sauvegarde JSON</h2></div>
+    <div class="sv-body">
+      <p style="font-size:13px;margin-bottom:12px">Télécharge une copie de toutes les données.</p>
+      <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;padding:10px 12px;font-size:12px;margin-bottom:14px"><b>Astuce :</b> Dans Chrome → Paramètres → Téléchargements → activez <b>"Demander où enregistrer"</b>.</div>
+      <div id="save-filename-display" style="background:#f5f5f5;border-radius:5px;padding:8px 12px;font-size:12px;font-family:monospace;color:#333"></div>
+    </div>
+    <div class="sv-foot"><button class="btn" onclick="closeSaveModal()">Annuler</button><button class="btn btn-success" onclick="confirmSaveModal()">⬇ Télécharger</button></div>
+  </div>
+</div>
+
+<div id="modal-overlay" class="modal-overlay">
+  <div id="modal-box">
+    <div class="modal-head"><span id="modal-title">Affecter activité</span><button onclick="closeModal()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer">✕</button></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn btn-danger btn-sm" onclick="clearModalCell()">Effacer</button><button class="btn btn-primary" onclick="confirmModal()">Valider</button></div>
+  </div>
+</div>
+
+<div id="nav">
+  <div class="logo" id="nav-logo">🏥 Planning Pôle Maternité</div>
+  <button onclick="showPage('planning')" id="btn-planning" class="active">📅 Planning mensuel</button>
+  <button onclick="showPage('garde')" id="btn-garde">🌙 Gardes &amp; Astreintes</button>
+  <button onclick="showPage('individuel')" id="btn-individuel">👤 Individuel</button>
+  <button onclick="showPage('services')" id="btn-services">🏢 Services</button>
+  <button onclick="showPage('declaratif')" id="btn-declaratif">📋 Déclaratif RH</button>
+  <button onclick="showPage('stats')" id="btn-stats">📊 Stats</button>
+  <button onclick="showPage('archives')" id="btn-archives">🗄️ Archives</button>
+  <div class="nav-right">
+    <span id="nav-user" style="font-size:12px;color:#a0c4ff;margin-right:6px"></span>
+    <button id="nav-pwd" style="display:none;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;margin-right:4px" onclick="openPwdModal()">🔑</button>
+    <button id="nav-logout" style="display:none;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;margin-right:8px" onclick="doLogout()">⏏ Déco</button>
+    <button onclick="showPage('config')" id="btn-config">⚙️ Config</button>
+    <div id="save-status">💾 …</div>
+  </div>
+</div>
+
+<div id="page-planning" class="page active">
+  <div class="toolbar">
+    <select id="sel-quadrimestre" onchange="onQuadChange()"></select>
+    <select id="sel-mois" onchange="renderPlanning()"></select>
+    <span style="margin-left:auto"><span style="cursor:pointer;color:var(--blue);font-size:12px" onclick="toggleLegend()">ℹ Légende</span></span>
+  </div>
+  <div id="last-export-lbl" style="font-size:11px;color:#888;margin-bottom:4px;text-align:right"></div>
+  <div id="legend-box" style="display:none;background:#fff;border:1px solid #ddd;border-radius:6px;padding:10px;margin-bottom:10px"><div style="display:flex;flex-wrap:wrap;gap:5px" id="legend-items"></div></div>
+  <div class="planning-wrap" id="planning-wrap"></div>
+  <div id="totaux-wrap"></div>
+</div>
+
+<div id="page-garde" class="page">
+  <div class="toolbar">
+    <select id="sel-garde-quad" onchange="onGardeQuadChange()"></select>
+    <select id="sel-garde-mois" onchange="renderGarde()"></select>
+    <select id="sel-garde-table" onchange="renderGarde()"></select>
+    <button class="btn btn-success" onclick="exportGardePDF()">📄 Export PDF</button>
+  </div>
+  <div id="garde-header-bar" style="margin-bottom:8px"></div>
+  <div id="garde-wrap"></div>
+  <div id="phone-list"></div>
+</div>
+
+<div id="page-individuel" class="page">
+  <div class="toolbar">
+    <select id="sel-indiv-quad" onchange="onIndivQuadChange()"></select>
+    <select id="sel-indiv-mois" onchange="renderIndividuel()"></select>
+    <select id="sel-indiv-medecin" onchange="renderIndividuel()"></select>
+    <button class="btn btn-success" onclick="exportIndividuelPDF(false)">📄 Export PDF planning</button>
+    <button class="btn btn-success" onclick="exportIndividuelPDF(true)" style="background:#7c3aed;border-color:#7c3aed">📄 Export PDF CA/RTT</button>
+  </div>
+  <div id="indiv-wrap"></div>
+</div>
+
+<div id="page-services" class="page">
+  <div class="toolbar">
+    <select id="sel-serv-quad" onchange="onServQuadChange()"></select>
+    <select id="sel-serv-mois" onchange="renderServices()"></select>
+    <button class="btn btn-success" onclick="exportServicesPDF()">📄 Export PDF</button>
+  </div>
+  <div id="services-wrap" style="overflow-x:auto"></div>
+</div>
+
+<div id="page-declaratif" class="page">
+  <div class="toolbar">
+    <select id="sel-decl-quad" onchange="onDeclQuadChange()"></select>
+    <select id="sel-decl-mois" onchange="renderDeclaratif()"></select>
+    <button class="btn btn-primary" onclick="exportDeclaratif()">⬇ Export CSV</button>
+  </div>
+  <div id="decl-wrap"></div>
+</div>
+
+<div id="page-stats" class="page">
+  <div class="toolbar">
+    <select id="sel-stats-quad" onchange="onStatsQuadChange()"></select>
+    <select id="sel-stats-mois" onchange="renderStats()"></select>
+  </div>
+  <div id="stats-wrap"></div>
+</div>
+
+<div id="page-archives" class="page">
+  <div class="toolbar no-print"><span style="font-size:14px;font-weight:700;color:var(--blue-dk)">🗄️ Éléments archivés</span></div>
+  <div id="archives-wrap"></div>
+</div>
+
+<div id="page-config" class="page">
+  <div class="conf-section">
+    <h3>🧭 Onglets visibles</h3>
+    <p style="font-size:11px;color:#555;margin-bottom:10px">Choisissez quels onglets afficher dans la barre de navigation. "Planning mensuel" et "Archives" sont toujours visibles.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px 20px" id="cfg-tabs-wrap"></div>
+    <div style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="saveTabsConfig()">💾 Enregistrer</button></div>
+  </div>
+
+  <div class="conf-section">
+    <h3>🏷️ Nom de l'application</h3>
+    <div class="form-row"><label>Nom</label><input id="cfg-app-name" placeholder="Planning Pôle Maternité" style="max-width:360px"><button class="btn btn-primary btn-sm" onclick="saveAppName()">💾 Enregistrer</button></div>
+  </div>
+
+  <div class="conf-section">
+    <h3>Quadrimestres</h3>
+    <div style="background:#f0f4ff;border:1px solid #c7d7f9;border-radius:5px;padding:10px;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:#1e3a8a" id="quad-form-title">Nouveau quadrimestre</div>
+      <div class="form-row"><label>Nom</label><input id="cfg-quad-nom" placeholder="3e Quadrimestre 2025-2026"></div>
+      <div class="form-row"><label style="min-width:50px">Début</label><input id="cfg-quad-debut" type="date"><label style="min-width:40px">Fin</label><input id="cfg-quad-fin" type="date"><input type="hidden" id="cfg-quad-edit-id"><button class="btn btn-primary btn-sm" onclick="saveQuadrimestre()">💾 Enregistrer</button><button class="btn btn-sm" onclick="cancelQuadEdit()" id="btn-cancel-quad" style="display:none">Annuler</button></div>
+    </div>
+    <div id="quad-list"></div>
+  </div>
+
+  <div class="conf-section">
+    <h3>Membres de l'équipe</h3>
+    <div style="background:#f0f4ff;border:1px solid #c7d7f9;border-radius:5px;padding:10px;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:#1e3a8a" id="med-form-title">Nouveau médecin</div>
+      <div class="form-row"><label>Prénom(s)</label><input id="cfg-med-prenom" placeholder="Claire Marie"><label style="min-width:60px">Nom</label><input id="cfg-med-nomfamille" placeholder="PILARD" style="max-width:160px"></div>
+      <div class="form-row"><label>Initiales</label><input id="cfg-med-init" placeholder="CMP" style="max-width:80px"></div>
+      <div class="form-row"><label>Raccourci</label><input id="cfg-med-raccourci" style="max-width:90px"><label style="min-width:70px">Tél. pro</label><input id="cfg-med-tel-pro" style="max-width:150px"><label style="min-width:70px">Tél. perso</label><input id="cfg-med-tel-perso" style="max-width:150px"></div>
+      <div class="form-row"><label style="min-width:60px">Temps (%)</label><input id="cfg-med-temps" type="number" min="10" max="100" step="5" value="100" style="max-width:80px"></div>
+      <div class="form-row" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;padding:6px 8px">
+        <span style="font-size:11px;font-weight:700;color:#15803d;min-width:100px">📅 Présence</span>
+        <label style="min-width:60px;color:#15803d">Début</label><input id="cfg-med-debut" type="date" style="max-width:145px">
+        <label style="min-width:50px;color:#15803d">Fin</label><input id="cfg-med-fin" type="date" style="max-width:145px">
+        <span style="font-size:10px;color:#666;font-style:italic">Vide = permanent</span>
+      </div>
+      <div class="form-row" style="margin-top:6px"><input type="hidden" id="cfg-med-edit-id"><button class="btn btn-primary btn-sm" onclick="saveMedecin()">💾 Enregistrer</button><button class="btn btn-sm" onclick="cancelMedEdit()" id="btn-cancel-med" style="display:none">Annuler</button></div>
+    </div>
+    <div class="member-list" id="member-list"></div>
+  </div>
+
+  <div class="conf-section">
+    <h3>📋 Slots du planning mensuel</h3>
+    <p style="font-size:11px;color:#555;margin-bottom:10px"><b>⚠️ Modifier l'identifiant d'un slot efface les données saisies dans ce slot.</b></p>
+    <div style="background:#f0f4ff;border:1px solid #c7d7f9;border-radius:5px;padding:10px;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:#1e3a8a" id="slot-form-title">Nouveau slot</div>
+      <div class="form-row">
+        <label style="min-width:80px">Identifiant</label><input id="cfg-slot-id" placeholder="Matin" style="max-width:110px">
+        <label style="min-width:60px">Libellé</label><input id="cfg-slot-label" placeholder="Matin" style="max-width:110px">
+        <label style="min-width:80px">Entête court</label><input id="cfg-slot-court" placeholder="Mat" style="max-width:70px">
+      </div>
+      <div class="form-row">
+        <label style="min-width:80px">Jours</label>
+        <select id="cfg-slot-jours" style="max-width:200px"><option value="sem">Semaine uniquement</option><option value="we">Week-end &amp; Fériés uniquement</option><option value="tous">Tous les jours</option></select>
+        <label style="min-width:50px;color:#15803d">Début</label><input id="cfg-slot-debut" type="date" style="max-width:135px">
+        <label style="min-width:40px;color:#15803d">Fin</label><input id="cfg-slot-fin" type="date" style="max-width:135px">
+        <span style="font-size:10px;color:#666;font-style:italic">Vide = permanent</span>
+      </div>
+      <div class="form-row"><input type="hidden" id="cfg-slot-edit-id"><button class="btn btn-primary btn-sm" onclick="saveSlot()">💾 Enregistrer</button><button class="btn btn-sm" id="btn-cancel-slot" onclick="cancelSlotEdit()" style="display:none">Annuler</button></div>
+    </div>
+    <div id="slot-list"></div>
+  </div>
+
+  <!-- TABLEAUX GARDES -->
+  <div class="conf-section">
+    <h3>🌙 Tableaux Gardes &amp; Astreintes</h3>
+    <p style="font-size:11px;color:#555;margin-bottom:10px">Créez autant de tableaux que nécessaire (Gardes Maternité, Astreintes HAD, Gardes Pédiatrie…). Chaque tableau a ses propres colonnes.</p>
+    <div id="garde-tables-list"></div>
+    <div style="background:#f0f4ff;border:1px solid #c7d7f9;border-radius:5px;padding:10px;margin-top:10px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:#1e3a8a" id="gt-form-title">Nouveau tableau</div>
+      <div class="form-row">
+        <label style="min-width:70px">Nom</label><input id="cfg-gt-label" placeholder="Gardes Maternité" style="max-width:200px">
+        <label style="min-width:60px">Couleur</label><input id="cfg-gt-color" type="color" value="#831843" style="max-width:50px;padding:2px">
+      </div>
+      <div class="form-row">
+        <label style="min-width:70px">N° de garde</label><input id="cfg-gt-numgarde" placeholder="Ex : DECT 5762 (05 40 45 57 62)" style="max-width:340px">
+        <span style="font-size:11px;color:#888;font-style:italic">Affiché en rouge en bas du PDF (laisser vide si aucun)</span>
+        <input type="hidden" id="cfg-gt-edit-id">
+        <button class="btn btn-primary btn-sm" onclick="saveGardeTable()">💾 Enregistrer</button>
+        <button class="btn btn-sm" id="btn-cancel-gt" onclick="cancelGardeTableEdit()" style="display:none">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLONNES PAR TABLEAU -->
+  <div class="conf-section" id="garde-cols-section">
+    <h3>📋 Colonnes du tableau sélectionné</h3>
+    <p style="font-size:11px;color:#555;margin-bottom:8px">Sélectionnez un tableau ci-dessus pour gérer ses colonnes.</p>
+    <div class="form-row" style="margin-bottom:10px">
+      <label style="min-width:100px">Tableau actif</label>
+      <select id="cfg-gt-sel-active" onchange="renderGardeColsForSelected()" style="max-width:280px"></select>
+    </div>
+    <div id="garde-col-list-dyn"></div>
+    <div style="background:#f0f4ff;border:1px solid #c7d7f9;border-radius:5px;padding:10px;margin-top:8px">
+      <div style="font-size:11px;font-weight:700;color:#1e3a8a;margin-bottom:6px" id="gc-col-form-title">Nouvelle colonne</div>
+      <div class="form-row">
+        <label style="min-width:70px">Libellé</label><input id="cfg-gc-label" placeholder="Matin 9h-13h" style="max-width:160px">
+        <label style="min-width:50px">Slot</label><select id="cfg-gc-slot" style="max-width:130px"></select>
+        <label style="min-width:50px">Jours</label>
+        <select id="cfg-gc-jours" style="max-width:160px"><option value="tous">Tous les jours</option><option value="sem">Semaine uniquement</option><option value="we">WE/Fériés uniquement</option></select>
+      </div>
+      <div class="form-row">
+        <label style="min-width:70px">Activités</label>
+        <div id="cfg-gc-acts-wrap" style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px"></div>
+      </div>
+      <div class="form-row"><input type="hidden" id="cfg-gc-edit-id"><button class="btn btn-primary btn-sm" onclick="saveGardeCol()">💾</button><button class="btn btn-sm" id="btn-cancel-gc" onclick="cancelGardeColEdit()" style="display:none">Annuler</button></div>
+    </div>
+    <div style="margin-top:8px"><button class="btn btn-sm" onclick="resetGardeColsForSelected()">↩ Réinitialiser colonnes par défaut</button></div>
+  </div>
+
+  <!-- DÉCLARATIF CONFIG -->
+  <div class="conf-section">
+    <h3>📋 Colonnes — Déclaratif RH</h3>
+    <p style="font-size:11px;color:#555;margin-bottom:10px">Définissez les colonnes du tableau Déclaratif. Type <b>Garde</b> : cherche le médecin ayant une activité donnée dans un slot. Type <b>Note</b> : texte libre éditable.</p>
+    <div id="decl-col-list"></div>
+    <div style="background:#f0f4ff;border:1px solid #c7d7f9;border-radius:5px;padding:10px;margin-top:8px">
+      <div style="font-size:11px;font-weight:700;color:#1e3a8a;margin-bottom:6px" id="decl-col-form-title">Nouvelle colonne</div>
+      <div class="form-row">
+        <label style="min-width:70px">Libellé</label><input id="cfg-dc-label" placeholder="Garde Mat. Jour 8h-18h" style="max-width:220px">
+        <label style="min-width:50px">Type</label>
+        <select id="cfg-dc-type" style="max-width:120px" onchange="onDeclColTypeChange()">
+          <option value="garde">Garde</option>
+          <option value="note">Note (texte libre)</option>
+        </select>
+      </div>
+      <div id="cfg-dc-garde-fields">
+        <div class="form-row">
+          <label style="min-width:70px">Slot</label><select id="cfg-dc-slot" style="max-width:130px"></select>
+          <label style="min-width:50px">Jours</label>
+          <select id="cfg-dc-jours" style="max-width:160px"><option value="tous">Tous les jours</option><option value="sem">Semaine uniquement</option><option value="we">WE/Fériés uniquement</option></select>
+        </div>
+        <div class="form-row">
+          <label style="min-width:70px">Activités</label>
+          <div id="cfg-dc-acts-wrap" style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px"></div>
+        </div>
+      </div>
+      <div class="form-row"><input type="hidden" id="cfg-dc-edit-id"><button class="btn btn-primary btn-sm" onclick="saveDeclCol()">💾</button><button class="btn btn-sm" id="btn-cancel-dc" onclick="cancelDeclColEdit()" style="display:none">Annuler</button></div>
+    </div>
+    <div style="margin-top:8px"><button class="btn btn-sm" onclick="resetDeclCols()">↩ Réinitialiser par défaut</button></div>
+  </div>
+
+  <!-- SERVICES -->
+  <div class="conf-section">
+    <h3>🏢 Structure du planning Services</h3>
+    <p style="font-size:11px;color:#555;margin-bottom:12px">Groupes (niveau 1) et sous-colonnes (niveau 2).</p>
+    <div style="margin-bottom:18px">
+      <div style="font-size:12px;font-weight:700;color:#1e3a8a;margin-bottom:6px">Groupes — niveau 1</div>
+      <div id="srv-seg-list"></div>
+      <div style="background:#f0f4ff;border:1px solid #c7d7f9;border-radius:5px;padding:8px 10px;margin-top:8px">
+        <div style="font-size:11px;font-weight:700;color:#1e3a8a;margin-bottom:6px" id="srv-seg-form-title">Nouveau groupe</div>
+        <div class="form-row"><label style="min-width:70px">Libellé</label><input id="cfg-srv-seg-label" placeholder="Ex : Maternité" style="max-width:200px"><label style="min-width:50px">Couleur</label><input id="cfg-srv-seg-color" type="color" value="#1a5fa8" style="max-width:50px;padding:2px"><input type="hidden" id="cfg-srv-seg-edit-id"><button class="btn btn-primary btn-sm" onclick="saveSrvSeg()">💾</button><button class="btn btn-sm" id="btn-cancel-srv-seg" onclick="cancelSrvSegEdit()" style="display:none">Annuler</button></div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:700;color:#1e3a8a;margin-bottom:6px">Sous-colonnes — niveau 2</div>
+      <div id="srv-col-list"></div>
+      <div style="background:#f0f4ff;border:1px solid #c7d7f9;border-radius:5px;padding:8px 10px;margin-top:8px">
+        <div style="font-size:11px;font-weight:700;color:#1e3a8a;margin-bottom:6px" id="srv-col-form-title">Nouvelle sous-colonne</div>
+        <div class="form-row"><label style="min-width:70px">Libellé</label><input id="cfg-srv-col-label" placeholder="Ex : Matin" style="max-width:150px"><label style="min-width:50px">Groupe</label><select id="cfg-srv-col-seg" style="max-width:180px"></select></div>
+        <div class="form-row"><label style="min-width:70px">Slots couverts</label><span id="cfg-srv-slots-wrap" style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px"></span></div>
+        <div class="form-row"><input type="hidden" id="cfg-srv-col-edit-id"><button class="btn btn-primary btn-sm" onclick="saveSrvCol()">💾</button><button class="btn btn-sm" id="btn-cancel-srv-col" onclick="cancelSrvColEdit()" style="display:none">Annuler</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="conf-section">
+    <h3>Mapping activités → colonnes Services</h3>
+    <p style="font-size:11px;color:#555;margin-bottom:10px">Cochez dans quelles colonnes chaque activité doit apparaître.</p>
+    <div id="srv-map-wrap" style="overflow-x:auto"></div>
+    <div style="margin-top:8px;display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="saveSrvMap()">💾 Enregistrer le mapping</button><button class="btn btn-sm" onclick="resetSrvMap()">↩ Réinitialiser par défaut</button></div>
+  </div>
+
+  <div class="conf-section">
+    <h3>Vacances scolaires (Zone A)</h3>
+    <div class="form-row"><label>Libellé</label><input id="cfg-vac-label" style="flex:2"><label style="min-width:50px">Début</label><input id="cfg-vac-debut" type="date"><label style="min-width:40px">Fin</label><input id="cfg-vac-fin" type="date"><button class="btn btn-primary btn-sm" onclick="addVacance()">+ Ajouter</button></div>
+    <div id="vac-list" style="margin-top:6px;font-size:12px"></div>
+  </div>
+
+  <div class="conf-section">
+    <h3>Jours fériés</h3>
+    <div class="form-row"><input id="cfg-ferie-date" type="date"><input id="cfg-ferie-nom" placeholder="Nom du jour férié" style="flex:2"><button class="btn btn-sm btn-primary" onclick="addFerie()">+ Ajouter</button></div>
+    <div id="ferie-list" style="margin-top:6px;font-size:12px"></div>
+  </div>
+
+  <div class="conf-section">
+    <h3>Types d'activité</h3>
+    <div style="background:#f0f4ff;border:1px solid #c7d7f9;border-radius:5px;padding:10px;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:#1e3a8a" id="type-form-title">Nouveau type</div>
+      <div class="form-row">
+        <label>Identifiant</label><input id="cfg-type-id" placeholder="urgence" style="max-width:120px">
+        <label>Libellé</label><input id="cfg-type-label" placeholder="Urgence" style="max-width:120px">
+        <label>Icône</label>
+        <div class="icon-picker-wrap" id="icon-picker-wrap">
+          <button type="button" class="icon-picker-btn" id="cfg-type-icon-btn" onclick="toggleIconPicker(event)">🏥</button>
+          <input type="hidden" id="cfg-type-icon" value="🏥">
+          <div class="icon-picker-popup" id="icon-picker-popup"><div id="icon-picker-content"></div></div>
+        </div>
+        <label>Couleur</label><input id="cfg-type-color" type="color" value="#1a5fa8" style="max-width:50px;padding:2px">
+        <input type="hidden" id="cfg-type-edit-id">
+        <button class="btn btn-primary btn-sm" onclick="saveType()">💾 Enregistrer</button>
+        <button class="btn btn-sm" onclick="cancelTypeEdit()" id="btn-cancel-type" style="display:none">Annuler</button>
+      </div>
+    </div>
+    <div id="type-list" style="margin-bottom:10px"></div>
+  </div>
+
+  <div class="conf-section">
+    <h3>Activités &amp; coefficients VAC</h3>
+    <div style="background:#f0f4ff;border:1px solid #c7d7f9;border-radius:5px;padding:10px;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:#1e3a8a" id="act-form-title">Nouvelle activité</div>
+      <div class="form-row"><label>Code</label><input id="cfg-act-code" placeholder="MAT" style="max-width:80px"><label>Libellé</label><input id="cfg-act-label" placeholder="Maternité"><label>Coeff.</label><input id="cfg-act-coeff" type="number" step="0.001" min="0" value="1" style="max-width:80px"></div>
+      <div class="form-row"><label>Type</label><select id="cfg-act-type" style="max-width:150px"></select><label>Couleur fond</label><input id="cfg-act-bg" type="color" value="#dbeafe" style="max-width:50px;padding:2px"><label>Couleur texte</label><input id="cfg-act-color" type="color" value="#1e3a8a" style="max-width:50px;padding:2px"><input type="hidden" id="cfg-act-edit-code"><button class="btn btn-primary btn-sm" onclick="saveActivite()">💾 Enregistrer</button><button class="btn btn-sm" onclick="cancelActEdit()" id="btn-cancel-act" style="display:none">Annuler</button></div>
+      <div class="form-row" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;padding:6px 8px">
+        <span style="font-size:11px;font-weight:700;color:#15803d;min-width:100px">📅 Disponibilité</span>
+        <label style="min-width:60px;color:#15803d">Début</label><input id="cfg-act-debut" type="date" style="max-width:145px">
+        <label style="min-width:50px;color:#15803d">Fin</label><input id="cfg-act-fin" type="date" style="max-width:145px">
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:#2c4a72;color:#fff">
+        <th style="padding:4px 6px;border:1px solid #bbb">Ordre</th><th style="padding:4px 6px;border:1px solid #bbb">Aperçu</th>
+        <th style="padding:4px 6px;border:1px solid #bbb">Code</th><th style="padding:4px 6px;border:1px solid #bbb">Libellé</th>
+        <th style="padding:4px 6px;border:1px solid #bbb">Coeff.</th><th style="padding:4px 6px;border:1px solid #bbb">Type</th>
+        <th style="padding:4px 6px;border:1px solid #bbb">Disponibilité</th><th style="padding:4px 6px;border:1px solid #bbb">Actions</th>
+      </tr></thead><tbody id="lexique-table"></tbody>
+    </table>
+  </div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+    <button class="btn btn-success" onclick="openSaveModal()">📤 Export JSON (backup)</button>
+    <label class="btn" style="cursor:pointer">📥 Import JSON<input type="file" accept=".json" style="display:none" onchange="importJSON(this)"></label>
+    <button class="btn btn-danger" onclick="resetAll()">🗑 Réinitialiser</button>
+  </div>
+  <div style="margin-top:12px;padding:10px;border-radius:6px;font-size:12px;background:#f0f9ff;border:1px solid #bae6fd">
+    💾 Données sauvegardées automatiquement. Utilisez <b>Export JSON</b> régulièrement.
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// TABLEAUX GARDES PAR DÉFAUT
+// ══════════════════════════════════════════════════════
+var DEFAULT_GARDE_TABLES = [
+  {
+    id:'gt_garde', label:'Gardes Maternité', color:'#831843', archived:false,
+    cols:[
+      {id:'gc1',label:'8h-9h',           slot:'8h',        activites:['8h'],              jours:'sem'},
+      {id:'gc2',label:'Matin (9h-13h)',   slot:'Matin',     activites:['SDN','Mater'],     jours:'sem'},
+      {id:'gc3',label:'Après-midi (13h-18h)',slot:'Apres-Midi',activites:['SDN','Mater'], jours:'sem'},
+      {id:'gc4',label:'Nuit (18h-8h)',    slot:'Nuit',      activites:['GSN','G+A S'],     jours:'sem'},
+      {id:'gc5',label:'Jour WE (8h-18h)',  slot:'Matin',    activites:['GWEJ','G+A WE J'],jours:'we'},
+      {id:'gc6',label:'Nuit WE (18h-8h)', slot:'Nuit',      activites:['GWEN','G+A WE N'],jours:'we'}
+    ]
+  },
+  {
+    id:'gt_had', label:'Astreintes HAD', color:'#7c2d12', archived:false,
+    cols:[
+      {id:'hc1',label:'Matin (8h-13h)',      slot:'Matin',     activites:['HAD J'],                      jours:'sem'},
+      {id:'hc2',label:'Après-midi (13h-18h)',slot:'Apres-Midi',activites:['HAD J'],                      jours:'sem'},
+      {id:'hc3',label:'Soirée (18h-23h)',    slot:'Nuit',      activites:['HAD N','HAD S','G+A S'],       jours:'sem'},
+      {id:'hc4',label:'Nuit (23h-8h)',       slot:'Nuit',      activites:['HAD N','G+A S','GSN'],         jours:'sem'},
+      {id:'hc5',label:'Jour WE (8h-23h)',    slot:'Matin',     activites:['HAD WE J','G+A WE J'],        jours:'we'},
+      {id:'hc6',label:'Nuit WE (23h-8h)',    slot:'Nuit',      activites:['HAD WE N','G+A WE N'],        jours:'we'}
+    ]
+  }
+];
+
+// ══════════════════════════════════════════════════════
+// ONGLETS CONFIGURABLES
+// ══════════════════════════════════════════════════════
+var TABS_CONFIG = [
+  {id:'garde',      label:'🌙 Gardes & Astreintes'},
+  {id:'individuel', label:'👤 Individuel'},
+  {id:'services',   label:'🏢 Services'},
+  {id:'declaratif', label:'📋 Déclaratif RH'},
+  {id:'stats',      label:'📊 Stats'}
+];
+
+function getTabsVisible(){
+  var saved=DB.tabsVisible;
+  if(!saved)return TABS_CONFIG.map(function(t){return t.id;});
+  return saved;
+}
+
+function renderTabsConfig(){
+  var wrap=document.getElementById('cfg-tabs-wrap');if(!wrap)return;
+  var visible=getTabsVisible();
+  var html='';
+  TABS_CONFIG.forEach(function(t){
+    var chk=visible.indexOf(t.id)>=0?'checked':'';
+    html+='<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f7fa;border:1px solid #ddd;border-radius:4px;padding:6px 12px">'
+      +'<input type="checkbox" id="tab-chk-'+t.id+'" value="'+t.id+'" '+chk+' style="width:16px;height:16px;cursor:pointer">'
+      +'<span>'+escHtml(t.label)+'</span></label>';
+  });
+  wrap.innerHTML=html;
+}
+
+function saveTabsConfig(){
+  var visible=[];
+  TABS_CONFIG.forEach(function(t){
+    var cb=document.getElementById('tab-chk-'+t.id);
+    if(cb&&cb.checked)visible.push(t.id);
+  });
+  DB.tabsVisible=visible;
+  scheduleSave();
+  applyTabsVisibility();
+}
+
+function applyTabsVisibility(){
+  var visible=getTabsVisible();
+  TABS_CONFIG.forEach(function(t){
+    var btn=document.getElementById('btn-'+t.id);
+    if(btn)btn.style.display=visible.indexOf(t.id)>=0?'':'none';
+    // Si l'onglet actif est masqué, revenir au planning
+    if(visible.indexOf(t.id)<0){
+      var page=document.getElementById('page-'+t.id);
+      if(page&&page.classList.contains('active'))showPage('planning');
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// COLONNES DÉCLARATIF PAR DÉFAUT
+// type:'garde' = cherche médecin via slot+activités
+// type:'note'  = texte libre éditable
+// ══════════════════════════════════════════════════════
+var DEFAULT_DECL_COLS = [
+  {id:'dc1', label:'Garde Mat. Jour 8h-18h',    slot:'Matin',     activites:['GWEJ','G+A WE J'],         jours:'we',  type:'garde'},
+  {id:'dc2', label:'Garde Mat. Nuit 18h-8h',    slot:'Nuit',      activites:['GWEN','G+A WE N','GSN','G+A S'], jours:'tous',type:'garde'},
+  {id:'dc3', label:'Astr. HAD Soirée sem 18h-23h', slot:'Nuit',   activites:['HAD N','HAD S','G+A S'],   jours:'sem', type:'garde'},
+  {id:'dc4', label:'Astr. HAD Jour WEF 8h-23h', slot:'Matin',     activites:['HAD WE J','G+A WE J'],     jours:'we',  type:'garde'},
+  {id:'dc5', label:'Observations',               slot:'',          activites:[],                          jours:'tous',type:'note'}
+];
+
+// ══════════════════════════════════════════════════════
+// AUTRES DONNÉES PAR DÉFAUT
+// ══════════════════════════════════════════════════════
+var DEFAULT_SLOTS=[{id:'8h',label:'8h',court:'8h',jours:'sem',dateDebut:'',dateFin:'',archived:false},{id:'Matin',label:'Matin',court:'Mat',jours:'tous',dateDebut:'',dateFin:'',archived:false},{id:'Apres-Midi',label:'Après-midi',court:'AM',jours:'sem',dateDebut:'',dateFin:'',archived:false},{id:'Nuit',label:'Nuit',court:'Nuit',jours:'tous',dateDebut:'',dateFin:'',archived:false}];
+var DEFAULT_SRV_SEGS=[{id:'mat',label:'Maternité',color:'#1a5fa8'},{id:'tr',label:'Activités transversales',color:'#15803d'},{id:'had',label:'HAD',color:'#b45309'},{id:'abs',label:'Absences',color:'#6b21a8'},{id:'info',label:'Informations',color:'#374151'}];
+var DEFAULT_SRV_COLS=[{id:'mat_8h',label:'8h',segId:'mat',slots:['8h']},{id:'mat_matin',label:'Matin',segId:'mat',slots:['Matin']},{id:'mat_am',label:'Après-midi',segId:'mat',slots:['Apres-Midi']},{id:'mat_garde',label:'Garde',segId:'mat',slots:['Nuit']},{id:'tr_cons',label:'Consultation',segId:'tr',slots:['Matin','Apres-Midi']},{id:'tr_cpdpn',label:'CPDPN',segId:'tr',slots:['Matin','Apres-Midi']},{id:'tr_adm',label:'Adm/Formation',segId:'tr',slots:['Matin','Apres-Midi']},{id:'tr_ceh',label:'CEH',segId:'tr',slots:['Matin','Apres-Midi']},{id:'had_matin',label:'Matin',segId:'had',slots:['Matin']},{id:'had_am',label:'Après-midi',segId:'had',slots:['Apres-Midi']},{id:'had_astrj',label:'Astr. jour',segId:'had',slots:['Matin','Apres-Midi']},{id:'had_1823',label:'Astr. 18-23h',segId:'had',slots:['Nuit']},{id:'had_238',label:'Astr. 23-8h',segId:'had',slots:['Nuit']},{id:'abs_recup',label:'Récup/RS/TTA',segId:'abs',slots:['8h','Matin','Apres-Midi','Nuit']},{id:'abs_tp',label:'Temps partiel',segId:'abs',slots:['8h','Matin','Apres-Midi','Nuit']},{id:'abs_ca',label:'CA',segId:'abs',slots:['8h','Matin','Apres-Midi','Nuit']},{id:'abs_rtt',label:'RTT',segId:'abs',slots:['8h','Matin','Apres-Midi','Nuit']},{id:'info_note',label:'Notes',segId:'info',slots:[]}];
+var DEFAULT_SRV_MAP={'Mater':[{col:'mat_matin',slots:['Matin']},{col:'mat_am',slots:['Apres-Midi']}],'SDN':[{col:'mat_matin',slots:['Matin']},{col:'mat_am',slots:['Apres-Midi']}],'CEH':[{col:'tr_ceh',slots:['Matin','Apres-Midi']}],'Consult':[{col:'tr_cons',slots:['Matin','Apres-Midi']}],'CPDPN':[{col:'tr_cpdpn',slots:['Matin','Apres-Midi']}],'HAD':[{col:'had_matin',slots:['Matin']},{col:'had_am',slots:['Apres-Midi']}],'HAD J':[{col:'had_matin',slots:['Matin']},{col:'had_am',slots:['Apres-Midi']},{col:'had_astrj',slots:['Matin','Apres-Midi']}],'8h':[{col:'mat_8h',slots:['8h']}],'ADM':[{col:'tr_adm',slots:['Matin','Apres-Midi']}],'GSN':[{col:'mat_garde',slots:['Nuit']}],'HAD S':[{col:'had_1823',slots:['Nuit']}],'G+A S':[{col:'mat_garde',slots:['Nuit']},{col:'had_1823',slots:['Nuit']},{col:'had_238',slots:['Nuit']}],'GWEJ':[{col:'mat_8h',slots:['Matin']},{col:'mat_matin',slots:['Matin']},{col:'mat_am',slots:['Matin']}],'HAD WE J':[{col:'had_astrj',slots:['Matin']},{col:'had_1823',slots:['Matin']}],'G+A WE J':[{col:'mat_8h',slots:['Matin']},{col:'mat_matin',slots:['Matin']},{col:'mat_am',slots:['Matin']},{col:'had_astrj',slots:['Matin']},{col:'had_1823',slots:['Matin']}],'GWEN':[{col:'mat_garde',slots:['Nuit']}],'HAD WE N':[{col:'had_238',slots:['Nuit']}],'G+A WE N':[{col:'mat_garde',slots:['Nuit']},{col:'had_238',slots:['Nuit']}],'HAD N':[{col:'had_1823',slots:['Nuit']},{col:'had_238',slots:['Nuit']}],'TP':[{col:'abs_tp',slots:['8h','Matin','Apres-Midi','Nuit']}],'RS':[{col:'abs_recup',slots:['8h','Matin','Apres-Midi','Nuit']}],'CA':[{col:'abs_ca',slots:['8h','Matin','Apres-Midi','Nuit']}],'RTT':[{col:'abs_rtt',slots:['8h','Matin','Apres-Midi','Nuit']}],'Recup':[{col:'abs_recup',slots:['8h','Matin','Apres-Midi','Nuit']}],'AT':[{col:'abs_recup',slots:['8h','Matin','Apres-Midi','Nuit']}]};
+var DEFAULT_ACTIVITES=[{code:'Mater',label:'Maternite',coeff:1,bg:'#dbeafe',color:'#1e3a8a',type:'clinique',dateDebut:'',dateFin:'',archived:false},{code:'SDN',label:'Salle de naissance',coeff:1,bg:'#e0f2fe',color:'#0c4a6e',type:'clinique',dateDebut:'',dateFin:'',archived:false},{code:'CEH',label:'Centre Expert Handicap',coeff:1,bg:'#f0fdf4',color:'#14532d',type:'clinique',dateDebut:'',dateFin:'',archived:false},{code:'Consult',label:'Consultation',coeff:1,bg:'#fef9c3',color:'#713f12',type:'clinique',dateDebut:'',dateFin:'',archived:false},{code:'CPDPN',label:'CPDPN',coeff:1,bg:'#fae8ff',color:'#581c87',type:'clinique',dateDebut:'',dateFin:'',archived:false},{code:'HAD',label:'HAD Bureau',coeff:1,bg:'#fef3c7',color:'#78350f',type:'had',dateDebut:'',dateFin:'',archived:false},{code:'HAD J',label:'HAD Astreinte 8h-18h',coeff:1,bg:'#ffedd5',color:'#7c2d12',type:'had',dateDebut:'',dateFin:'',archived:false},{code:'HAD S',label:'Astreinte HAD soir sem',coeff:0,bg:'#fed7aa',color:'#7c2d12',type:'had',dateDebut:'',dateFin:'',archived:false},{code:'HAD N',label:'Astreinte HAD nuit 18h-8h',coeff:0,bg:'#fed7aa',color:'#7c2d12',type:'had',dateDebut:'',dateFin:'',archived:false},{code:'8h',label:'Presence 8h',coeff:0,bg:'#fef08a',color:'#713f12',type:'special',dateDebut:'',dateFin:'',archived:false},{code:'ADM',label:'Admin / Formation',coeff:1,bg:'#e2e8f0',color:'#1e293b',type:'special',dateDebut:'',dateFin:'',archived:false},{code:'GSN',label:'Garde Semaine Nuit',coeff:2,bg:'#fce7f3',color:'#831843',type:'garde',dateDebut:'',dateFin:'',archived:false},{code:'G+A S',label:'Garde+Astreinte sem nuit',coeff:2,bg:'#fecdd3',color:'#881337',type:'garde',dateDebut:'',dateFin:'',archived:false},{code:'GWEJ',label:'Garde WE Jour',coeff:2,bg:'#ffd7d7',color:'#7f1d1d',type:'garde',dateDebut:'',dateFin:'',archived:false},{code:'HAD WE J',label:'Astreinte HAD WE jour',coeff:0.25,bg:'#fed7aa',color:'#7c2d12',type:'had',dateDebut:'',dateFin:'',archived:false},{code:'G+A WE J',label:'Garde+Astreinte WE Jour',coeff:2,bg:'#fca5a5',color:'#7f1d1d',type:'garde',dateDebut:'',dateFin:'',archived:false},{code:'G+A WE N',label:'Garde+Astreinte WE Nuit',coeff:3,bg:'#fca5a5',color:'#7f1d1d',type:'garde',dateDebut:'',dateFin:'',archived:false},{code:'GWEN',label:'Garde WE Nuit',coeff:3,bg:'#ffe4e4',color:'#7f1d1d',type:'garde',dateDebut:'',dateFin:'',archived:false},{code:'HAD WE N',label:'Astreinte HAD WE nuit',coeff:0.25,bg:'#fed7aa',color:'#7c2d12',type:'had',dateDebut:'',dateFin:'',archived:false},{code:'TP',label:'Temps partiel',coeff:0,bg:'#e5e7eb',color:'#374151',type:'absence',dateDebut:'',dateFin:'',archived:false},{code:'RS',label:'Repos securite',coeff:0,bg:'#d1fae5',color:'#065f46',type:'absence',dateDebut:'',dateFin:'',archived:false},{code:'CA',label:'Conge annuel',coeff:0,bg:'#cffafe',color:'#164e63',type:'absence',dateDebut:'',dateFin:'',archived:false},{code:'RTT',label:'RTT',coeff:0,bg:'#e0e7ff',color:'#3730a3',type:'absence',dateDebut:'',dateFin:'',archived:false},{code:'Recup',label:'Recuperation',coeff:0,bg:'#d1fae5',color:'#065f46',type:'absence',dateDebut:'',dateFin:'',archived:false},{code:'AT',label:'Arret de travail',coeff:0.575,bg:'#f3f4f6',color:'#6b7280',type:'absence',dateDebut:'',dateFin:'',archived:false}];
+var DEFAULT_TYPES=[{id:'clinique',label:'Clinique',color:'#1a5fa8',icon:'🏥'},{id:'garde',label:'Gardes',color:'#991b1b',icon:'🌙'},{id:'had',label:'HAD',color:'#92400e',icon:'🚑'},{id:'special',label:'Special',color:'#1e293b',icon:'⚙️'},{id:'absence',label:'Absences',color:'#374151',icon:'📅'}];
+var DEFAULT_VACANCES=[{label:'Toussaint 2025',debut:'2025-10-18',fin:'2025-11-03'},{label:'Noel 2025',debut:'2025-12-20',fin:'2026-01-05'},{label:'Hiver 2026 (Zone A)',debut:'2026-02-14',fin:'2026-03-02'},{label:'Printemps 2026 (A)',debut:'2026-04-11',fin:'2026-04-27'},{label:'Ete 2026',debut:'2026-07-04',fin:'2026-08-31'},{label:'Toussaint 2026',debut:'2026-10-17',fin:'2026-11-02'},{label:'Noel 2026',debut:'2026-12-19',fin:'2027-01-04'},{label:'Hiver 2027 (Zone A)',debut:'2027-02-13',fin:'2027-03-01'},{label:'Printemps 2027 (A)',debut:'2027-04-10',fin:'2027-04-26'},{label:'Ete 2027',debut:'2027-07-03',fin:'2027-08-31'}];
+
+var JOURS=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'],JOURS_LONG=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+var MOIS_LABELS=['Janvier','Fevrier','Mars','Avril','Mai','Juin','Juillet','Aout','Septembre','Octobre','Novembre','Decembre'];
+var MOIS_COURT=['janv.','fevr.','mars','avr.','mai','juin','juil.','aout','sept.','oct.','nov.','dec.'];
+var ACTIVITES=[],ACT_MAP={};
+function rebuildActMap(){ACTIVITES=DB.activites||DEFAULT_ACTIVITES;ACT_MAP={};ACTIVITES.forEach(function(a){ACT_MAP[a.code]=a;});}
+function actStyle(a){return a?'background:'+a.bg+';color:'+a.color:'';}
+
+// ══════════════════════════════════════════════════════
+// DB
+// ══════════════════════════════════════════════════════
+var DB={quadrimestres:[],medecins:[],feries:[],planning:{},notes:{},notesDecl:{}};
+var IDB_NAME='planningMedDB',IDB_STORE='data',IDB_KEY='main',IDB_VER=1,_saveTimer=null;
+function idbOpen(){return new Promise(function(res,rej){var r=indexedDB.open(IDB_NAME,IDB_VER);r.onupgradeneeded=function(e){e.target.result.createObjectStore(IDB_STORE);};r.onsuccess=function(e){res(e.target.result);};r.onerror=function(){rej(r.error);};});}
+function idbGet(){return idbOpen().then(function(db){return new Promise(function(res){var tx=db.transaction(IDB_STORE,'readonly'),r=tx.objectStore(IDB_STORE).get(IDB_KEY);r.onsuccess=function(){res(r.result||null);};r.onerror=function(){res(null);};});}).catch(function(){return null;});}
+function idbSet(d){return idbOpen().then(function(db){return new Promise(function(res){var tx=db.transaction(IDB_STORE,'readwrite');tx.objectStore(IDB_STORE).put(d,IDB_KEY);tx.oncomplete=function(){res(true);};tx.onerror=function(){res(false);};});}).catch(function(){return false;});}
+function idbDelete(){return idbOpen().then(function(db){return new Promise(function(res){var tx=db.transaction(IDB_STORE,'readwrite');tx.objectStore(IDB_STORE).delete(IDB_KEY);tx.oncomplete=function(){res();};tx.onerror=function(){res();};});}).catch(function(){});}
+
+// ══════════════════════════════════════════════════════
+// SYNCHRONISATION SHAREPOINT (Power Automate)
+// ══════════════════════════════════════════════════════
+var SP_READ_URL  = 'https://default23ef86fa76d1444cad8436027df05c.6b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/a7ced92800f34064b1b802233851f236/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=DomCSUvdn21llrckFLH5Ryj6PjKl3o-MzHgHMfG5_eQ';
+var SP_WRITE_URL = 'https://default23ef86fa76d1444cad8436027df05c.6b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/eebf2a7b8d7a4388aefe729460e19a97/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Y9Ve5V83ZsbZDVYD3MpNdsTv0oIY13ufkyXb7ouKM3I';
+var SP_AUTH_URL  = 'https://default23ef86fa76d1444cad8436027df05c.6b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ce4c5f91761f448c931c23ebec25538c/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=a7Z0hwtVU3w52wWkSWz8nmNbCRZu3FvVEDDTmJLpP_I';
+var SP_WRITE_USERS_URL = 'https://default23ef86fa76d1444cad8436027df05c.6b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/88974f834ff9420ba8be2ec4cb5c8844/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=zSzFLqvQ-_HEtDvVdwY-H0UUeEOib1R2efDqKWpJIag';
+var _currentUser = null;
+var _syncTimer = null;
+var _lastSyncHash = null;
+
+function jsonHash(obj){var s=JSON.stringify(obj);var h=0;for(var i=0;i<s.length;i++){h=(Math.imul(31,h)+s.charCodeAt(i))|0;}return h;}
+
+function spRead(){
+  return fetch(SP_READ_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'})
+    .then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.text();
+    })
+    .then(function(txt){
+      if(!txt||txt.trim()===''||txt.trim()==='{}') return null;
+      try{ return JSON.parse(txt); }catch(e){ return null; }
+    });
+}
+
+function spWrite(data){
+  return fetch(SP_WRITE_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)})
+    .then(function(r){ return r.ok; })
+    .catch(function(){ return false; });
+}
+
+function scheduleSave(){clearTimeout(_saveTimer);_saveTimer=setTimeout(doSave,800);}
+
+function doSave(){
+  // Sauvegarde locale immédiate
+  try{localStorage.setItem('planningMed',JSON.stringify(DB));}catch(e){}
+  idbSet(DB);
+  // Envoi vers SharePoint
+  setSaveStatus('saving','Synchronisation...');
+  spWrite(DB).then(function(ok){
+    if(ok){
+      _lastSyncHash = jsonHash(DB);
+      setSaveStatus('saved','Synchronisé '+pad(new Date().getHours())+':'+pad(new Date().getMinutes()));
+    } else {
+      setSaveStatus('saved','Sauvegardé localement (SharePoint indisponible)');
+    }
+  }).catch(function(){
+    setSaveStatus('saved','Sauvegardé localement (hors ligne)');
+  });
+}
+
+function startAutoRefresh(){
+  // Vérifie toutes les 30 secondes si un collègue a modifié le planning
+  _syncTimer = setInterval(function(){
+    spRead().then(function(data){
+      if(!data||!data.quadrimestres||!data.medecins) return;
+      var h = jsonHash(data);
+      if(_lastSyncHash !== null && h !== _lastSyncHash && h !== jsonHash(DB)){
+        // Des modifications distantes détectées
+        DB = data;
+        _lastSyncHash = h;
+        try{localStorage.setItem('planningMed',JSON.stringify(DB));}catch(e){}
+        idbSet(DB);
+        migrateDB(); rebuildActMap(); populateAllSelects(); renderConfig(); renderPlanning(); buildLegend(); updateLastExportLabel(); applyTabsVisibility();
+        setSaveStatus('saved','Mis à jour par un collègue — '+pad(new Date().getHours())+':'+pad(new Date().getMinutes()));
+      }
+    }).catch(function(){});
+  }, 5000);
+}
+
+function initStorage(){
+  setSaveStatus('saving','Chargement depuis SharePoint...');
+  // Essayer d'abord SharePoint
+  return spRead().then(function(data){
+    if(data && data.quadrimestres && data.medecins){
+      DB = data;
+      _lastSyncHash = jsonHash(DB);
+      try{localStorage.setItem('planningMed',JSON.stringify(DB));}catch(e){}
+      idbSet(DB);
+      setSaveStatus('saved','Prêt (SharePoint)');
+      return;
+    }
+    // Fallback local
+    return idbGet().then(function(d){
+      if(!d){var s=localStorage.getItem('planningMed');if(s){try{d=JSON.parse(s);}catch(e){}}}
+      if(d&&d.quadrimestres&&d.medecins){DB=d;}
+      setSaveStatus('saved','Prêt (local)');
+    });
+  }).catch(function(){
+    // SharePoint inaccessible → fallback local
+    return idbGet().then(function(d){
+      if(!d){var s=localStorage.getItem('planningMed');if(s){try{d=JSON.parse(s);}catch(e){}}}
+      if(d&&d.quadrimestres&&d.medecins){DB=d;}
+      setSaveStatus('saved','Prêt (mode local — SharePoint inaccessible)');
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// UTILITAIRES
+// ══════════════════════════════════════════════════════
+function pad(n){return String(n).padStart(2,'0');}
+function setSaveStatus(cls,txt){var el=document.getElementById('save-status');if(el){el.className=cls;el.textContent=txt;}}
+function dateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function parseDate(s){var p=s.split('-');return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));}
+function isWE(d){return d.getDay()===0||d.getDay()===6;}
+function isFerie(ds){return DB.feries.some(function(f){return f.date===ds;});}
+function getFerieNom(ds){var f=DB.feries.find(function(x){return x.date===ds;});return f?f.nom:'';}
+function isSpecialDay(d,ds){return isWE(d)||isFerie(ds);}
+function getMoisDays(y,m){var days=[],d=new Date(y,m-1,1);while(d.getMonth()===m-1){days.push(new Date(d));d.setDate(d.getDate()+1);}return days;}
+function getMoisInQuad(qId){var q=DB.quadrimestres.find(function(x){return x.id===qId;});if(!q)return[];var debut=parseDate(q.debut),fin=parseDate(q.fin),mois=[],cur=new Date(debut.getFullYear(),debut.getMonth(),1);while(cur<=fin){mois.push({year:cur.getFullYear(),month:cur.getMonth()+1,label:MOIS_LABELS[cur.getMonth()]+' '+cur.getFullYear()});cur.setMonth(cur.getMonth()+1);}return mois;}
+function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function qv(id){var el=document.getElementById(id);return el?el.value:'';}
+function getPeriodFromMois(mv){var p=mv.split('-'),days=getMoisDays(parseInt(p[0]),parseInt(p[1]));return{debut:dateStr(days[0]),fin:dateStr(days[days.length-1])};}
+function getVacances(){return DB.vacances||DEFAULT_VACANCES;}
+function isVacSco(ds){var v=getVacances();for(var i=0;i<v.length;i++){if(ds>=v[i].debut&&ds<=v[i].fin)return true;}return false;}
+function getMedsForPeriod(dS,fS){return DB.medecins.filter(function(m){if(!m.dateDebut)return !m.archived;if(dS&&m.dateDebut>fS)return false;if(m.dateFin&&fS&&m.dateFin<dS)return false;return true;});}
+function isActAvailableOnDate(act,ds){if(act.archived)return false;if(act.dateDebut&&ds<act.dateDebut)return false;if(act.dateFin&&ds>act.dateFin)return false;return true;}
+function getJoursFeriesFrance(year){function paques(y){var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),day=(h+l-7*m+114)%31+1;return new Date(y,mo-1,day);}function add(d,n){var r=new Date(d);r.setDate(r.getDate()+n);return r;}function fmt(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}var p=paques(year);return[{date:year+'-01-01',nom:"Jour de l'An"},{date:fmt(add(p,1)),nom:'Lundi de Paques'},{date:year+'-05-01',nom:'Fete du Travail'},{date:year+'-05-08',nom:'Victoire 1945'},{date:fmt(add(p,39)),nom:'Ascension'},{date:fmt(add(p,50)),nom:'Lundi de Pentecote'},{date:year+'-07-14',nom:'Fete Nationale'},{date:year+'-08-15',nom:'Assomption'},{date:year+'-11-01',nom:'Toussaint'},{date:year+'-11-11',nom:'Armistice'},{date:year+'-12-25',nom:'Noel'}];}
+
+// ══════════════════════════════════════════════════════
+// SLOTS
+// ══════════════════════════════════════════════════════
+function getSlots(){return DB.slots||DEFAULT_SLOTS;}
+function getActiveSlots(){return getSlots().filter(function(s){return !s.archived;});}
+function isSlotActive(s,ds){if(s.archived)return false;if(s.dateDebut&&ds<s.dateDebut)return false;if(s.dateFin&&ds>s.dateFin)return false;return true;}
+function getSlotsForDay(d,ds){return getSlots().filter(function(s){if(s.jours==='sem'&&isSpecialDay(d,ds))return false;if(s.jours==='we'&&!isSpecialDay(d,ds))return false;return true;});}
+
+// ══════════════════════════════════════════════════════
+// TABLEAUX GARDES — accès données
+// ══════════════════════════════════════════════════════
+function getGardeTables(){return DB.gardeTables||DEFAULT_GARDE_TABLES;}
+function getActiveGardeTables(){return getGardeTables().filter(function(t){return !t.archived;});}
+function getGardeTableById(id){return getGardeTables().find(function(t){return t.id===id;});}
+function getCurrentGardeTable(){var id=qv('sel-garde-table');return getGardeTableById(id);}
+
+function resolveGardeCol(qId,ds,col,sp){
+  if(col.jours==='sem'&&sp)return null;
+  if(col.jours==='we'&&!sp)return null;
+  var acts=col.activites||[];
+  // Si pas de liste d'activités : premier médecin avec une valeur
+  if(acts.length===0){
+    for(var i=0;i<DB.medecins.length;i++){
+      var val=getCell(qId,DB.medecins[i].id,ds,col.slot);
+      if(val)return DB.medecins[i].nom;
+    }
+    return null;
+  }
+  // Respect de la priorité : on cherche activité par activité dans l'ordre
+  for(var a=0;a<acts.length;a++){
+    for(var i=0;i<DB.medecins.length;i++){
+      var val=getCell(qId,DB.medecins[i].id,ds,col.slot);
+      if(val===acts[a])return DB.medecins[i].nom;
+    }
+  }
+  return null;
+}
+
+function getColsForDay(gt,sp){
+  if(!gt)return[];
+  return (gt.cols||[]).filter(function(col){
+    if(col.jours==='sem'&&sp)return false;
+    if(col.jours==='we'&&!sp)return false;
+    return true;
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// MIGRATION
+// ══════════════════════════════════════════════════════
+function migrateDB(){
+  if(!DB.appName)DB.appName='Planning Pôle Maternité';
+  if(!DB.notes)DB.notes={};if(!DB.notesDecl)DB.notesDecl={};
+  if(DB.medecins)DB.medecins.forEach(function(m){if(m.dateDebut===undefined)m.dateDebut='';if(m.dateFin===undefined)m.dateFin='';if(m.archived===undefined)m.archived=false;});
+  if(DB.quadrimestres)DB.quadrimestres.forEach(function(q){if(q.archived===undefined)q.archived=false;});
+  if(DB.activites)DB.activites.forEach(function(a){if(a.dateDebut===undefined)a.dateDebut='';if(a.dateFin===undefined)a.dateFin='';if(a.archived===undefined)a.archived=false;});
+  if(DB.types)DB.types.forEach(function(t){if(!t.icon){var d=DEFAULT_TYPES.find(function(x){return x.id===t.id;});if(d)t.icon=d.icon;}});
+  if(!DB.activites)DB.activites=JSON.parse(JSON.stringify(DEFAULT_ACTIVITES));
+  if(!DB.types)DB.types=JSON.parse(JSON.stringify(DEFAULT_TYPES));
+  if(!DB.vacances)DB.vacances=JSON.parse(JSON.stringify(DEFAULT_VACANCES));
+  if(!DB.slots)DB.slots=JSON.parse(JSON.stringify(DEFAULT_SLOTS));
+  DB.slots.forEach(function(s){if(s.dateDebut===undefined)s.dateDebut='';if(s.dateFin===undefined)s.dateFin='';if(s.archived===undefined)s.archived=false;if(!s.court)s.court=s.id;if(!s.jours)s.jours='tous';});
+  if(!DB.srvSegs)DB.srvSegs=JSON.parse(JSON.stringify(DEFAULT_SRV_SEGS));
+  if(!DB.srvCols)DB.srvCols=JSON.parse(JSON.stringify(DEFAULT_SRV_COLS));
+  if(!DB.srvMap)DB.srvMap=JSON.parse(JSON.stringify(DEFAULT_SRV_MAP));
+  // Migration : séparer nom/prénom si pas encore fait
+  if(DB.medecins)DB.medecins.forEach(function(m){
+    if(!m.prenom&&!m.nomFamille&&m.nom){
+      // Heuristique : mots tout en majuscules = nom de famille
+      var parts=m.nom.trim().split(/\s+/);
+      var nomParts=[],prenomParts=[];
+      parts.forEach(function(w){if(w===w.toUpperCase()&&w.length>1)nomParts.push(w);else prenomParts.push(w);});
+      m.nomFamille=nomParts.join(' ')||parts[parts.length-1];
+      m.prenom=prenomParts.join(' ')||'';
+    }
+    if(!m.nomFamille)m.nomFamille='';
+    if(!m.prenom)m.prenom='';
+  });
+  if(!DB.declCols)DB.declCols=JSON.parse(JSON.stringify(DEFAULT_DECL_COLS));
+  DB.declCols.forEach(function(c){if(!c.type)c.type='garde';if(!c.jours)c.jours='tous';if(!c.activites)c.activites=[];});
+  // Migration : ancienne structure gardeColsDef/hadColsDef → gardeTables
+  if(!DB.gardeTables){
+    var tables=JSON.parse(JSON.stringify(DEFAULT_GARDE_TABLES));
+    if(DB.gardeColsDef)tables[0].cols=DB.gardeColsDef;
+    if(DB.hadColsDef)tables[1].cols=DB.hadColsDef;
+    DB.gardeTables=tables;
+    delete DB.gardeColsDef;
+    delete DB.hadColsDef;
+  }
+  DB.gardeTables.forEach(function(t){if(t.archived===undefined)t.archived=false;if(!t.color)t.color='#831843';if(!t.cols)t.cols=[];});
+}
+
+// ══════════════════════════════════════════════════════
+// CONFIG : TABLEAUX GARDES
+// ══════════════════════════════════════════════════════
+function renderGardeTablesList(){
+  var el=document.getElementById('garde-tables-list');if(!el)return;
+  var tables=getGardeTables(),active=tables.filter(function(t){return !t.archived;}),arcCount=tables.filter(function(t){return t.archived;}).length;
+  el.innerHTML=active.map(function(t,idx){
+    return '<div class="garde-table-card" style="border-left:4px solid '+t.color+';background:'+t.color+'0d">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center">'
+      +'<div><span style="font-weight:700;font-size:13px">'+escHtml(t.label)+'</span> '
+      +'<span style="font-size:11px;color:#666;margin-left:6px">'+t.cols.length+' colonne(s)</span></div>'
+      +'<div style="display:flex;gap:4px">'
+      +'<button class="btn btn-sm" data-idx="'+idx+'" onclick="moveGardeTable(parseInt(this.dataset.idx),-1)" '+(idx===0?'disabled':'')+'>▲</button>'
+      +'<button class="btn btn-sm" data-idx="'+idx+'" onclick="moveGardeTable(parseInt(this.dataset.idx),1)" '+(idx===active.length-1?'disabled':'')+'>▼</button>'
+      +'<button class="btn btn-warn btn-sm" data-tid="'+escHtml(t.id)+'" onclick="editGardeTable(this.dataset.tid)">✏️</button>'
+      +'<button class="btn btn-archive btn-sm" data-tid="'+escHtml(t.id)+'" onclick="archiveGardeTable(this.dataset.tid)" title="Archiver">📦</button>'
+      +'<button class="btn btn-danger btn-sm" data-tid="'+escHtml(t.id)+'" onclick="removeGardeTable(this.dataset.tid)">✕</button>'
+      +'</div></div></div>';
+  }).join('');
+  if(arcCount)el.innerHTML+='<div style="margin-top:6px;font-size:11px;color:#888;font-style:italic">'+arcCount+' archivé(s) — <a href="#" onclick="showPage(\'archives\');return false;" style="color:var(--blue)">voir les archives</a></div>';
+  // Mettre à jour le sélecteur du tableau actif dans la section colonnes
+  var sel=document.getElementById('cfg-gt-sel-active');
+  if(sel){var prev=sel.value;sel.innerHTML='<option value="">— Sélectionner un tableau —</option>'+active.map(function(t){return'<option value="'+escHtml(t.id)+'">'+escHtml(t.label)+'</option>';}).join('');if(prev)sel.value=prev;}
+  // Mettre à jour le sélecteur de la page Gardes
+  populateGardeTableSelect();
+}
+
+function saveGardeTable(){
+  if(!DB.gardeTables)DB.gardeTables=JSON.parse(JSON.stringify(DEFAULT_GARDE_TABLES));
+  var label=document.getElementById('cfg-gt-label').value.trim(),color=document.getElementById('cfg-gt-color').value,numGarde=document.getElementById('cfg-gt-numgarde').value.trim(),editId=document.getElementById('cfg-gt-edit-id').value;
+  if(!label){alert('Nom obligatoire');return;}
+  if(editId){
+    var idx=DB.gardeTables.findIndex(function(t){return t.id===editId;});
+    if(idx>=0){DB.gardeTables[idx].label=label;DB.gardeTables[idx].color=color;DB.gardeTables[idx].numGarde=numGarde;}
+  }else{
+    DB.gardeTables.push({id:'gt_'+Date.now(),label:label,color:color,numGarde:numGarde,archived:false,cols:[]});
+  }
+  cancelGardeTableEdit();scheduleSave();renderGardeTablesList();
+}
+function editGardeTable(id){
+  var t=getGardeTableById(id);if(!t)return;
+  document.getElementById('cfg-gt-label').value=t.label;
+  document.getElementById('cfg-gt-color').value=t.color;
+  document.getElementById('cfg-gt-numgarde').value=t.numGarde||'';
+  document.getElementById('cfg-gt-edit-id').value=id;
+  document.getElementById('gt-form-title').textContent='Modifier : '+t.label;
+  document.getElementById('btn-cancel-gt').style.display='';
+}
+function cancelGardeTableEdit(){
+  document.getElementById('cfg-gt-label').value='';
+  document.getElementById('cfg-gt-color').value='#831843';
+  document.getElementById('cfg-gt-numgarde').value='';
+  document.getElementById('cfg-gt-edit-id').value='';
+  document.getElementById('gt-form-title').textContent='Nouveau tableau';
+  document.getElementById('btn-cancel-gt').style.display='none';
+}
+function archiveGardeTable(id){
+  var t=getGardeTableById(id);if(!t||!confirm('Archiver "'+t.label+'" ?'))return;
+  t.archived=true;scheduleSave();renderGardeTablesList();populateGardeTableSelect();
+}
+function unarchiveGardeTable(id){
+  var t=getGardeTableById(id);if(!t)return;
+  t.archived=false;scheduleSave();renderGardeTablesList();populateGardeTableSelect();renderArchives();
+}
+function removeGardeTable(id){
+  if(!confirm('Supprimer définitivement ce tableau ?'))return;
+  DB.gardeTables=DB.gardeTables.filter(function(t){return t.id!==id;});
+  scheduleSave();renderGardeTablesList();populateGardeTableSelect();renderArchives();
+}
+function moveGardeTable(idx,dir){
+  if(!DB.gardeTables)DB.gardeTables=JSON.parse(JSON.stringify(DEFAULT_GARDE_TABLES));
+  var active=DB.gardeTables.filter(function(t){return !t.archived;}),ni=idx+dir;
+  if(ni<0||ni>=active.length)return;
+  var ri=DB.gardeTables.indexOf(active[idx]),rni=DB.gardeTables.indexOf(active[ni]);
+  var tmp=DB.gardeTables[ri];DB.gardeTables[ri]=DB.gardeTables[rni];DB.gardeTables[rni]=tmp;
+  scheduleSave();renderGardeTablesList();
+}
+
+// ══════════════════════════════════════════════════════
+// CONFIG : COLONNES D'UN TABLEAU
+// ══════════════════════════════════════════════════════
+function renderGardeColsForSelected(){
+  var tid=qv('cfg-gt-sel-active');
+  var el=document.getElementById('garde-col-list-dyn');if(!el)return;
+  if(!tid){el.innerHTML='<p style="color:#888;font-size:12px">Sélectionnez un tableau ci-dessus.</p>';return;}
+  var t=getGardeTableById(tid);if(!t){el.innerHTML='';return;}
+  var cols=t.cols||[];
+  var jourL={'tous':'Tous les jours','sem':'Semaine','we':'WE/Fériés'};
+  el.innerHTML=cols.map(function(col,idx){
+    var slotObj=getSlots().find(function(s){return s.id===col.slot;}),sLabel=slotObj?slotObj.label:col.slot;
+    var actsLabel=col.activites&&col.activites.length
+      ? col.activites.map(function(a,i){return '<span style="background:#e0e7ff;border-radius:3px;padding:1px 5px;font-size:10px;margin-right:2px"><b>'+(i+1)+'.</b> '+escHtml(a)+'</span>';}).join('')
+      : '<span style="color:#888;font-style:italic">Toutes</span>';
+    return '<div class="slot-item"><div><b>'+escHtml(col.label)+'</b><br>'
+      +'<span style="font-size:11px;color:#666">Slot : '+escHtml(sLabel)+' | '+(jourL[col.jours||'tous'])+'</span><br>'
+      +'<span style="font-size:11px">Priorité : '+actsLabel+'</span></div>'
+      +'<div style="display:flex;gap:4px">'
+      +'<button class="btn btn-sm" data-idx="'+idx+'" onclick="moveGardeColDyn(parseInt(this.dataset.idx),-1)" '+(idx===0?'disabled':'')+'>▲</button>'
+      +'<button class="btn btn-sm" data-idx="'+idx+'" onclick="moveGardeColDyn(parseInt(this.dataset.idx),1)" '+(idx===cols.length-1?'disabled':'')+'>▼</button>'
+      +'<button class="btn btn-warn btn-sm" data-cid="'+escHtml(col.id)+'" onclick="editGardeColDyn(this.dataset.cid)">✏️</button>'
+      +'<button class="btn btn-danger btn-sm" data-cid="'+escHtml(col.id)+'" onclick="removeGardeColDyn(this.dataset.cid)">✕</button>'
+      +'</div></div>';
+  }).join('');
+  refreshGardeActCheckboxesDyn();
+}
+
+function refreshGardeActCheckboxesDyn(){
+  var wrap=document.getElementById('cfg-gc-acts-wrap');if(!wrap)return;
+  var editId=qv('cfg-gc-edit-id');
+  var tid=qv('cfg-gt-sel-active');
+  var t=tid?getGardeTableById(tid):null;
+  var col=editId&&t?(t.cols||[]).find(function(c){return c.id===editId;}):null;
+  var allActs=(DB.activites||DEFAULT_ACTIVITES).filter(function(a){return !a.archived;});
+  var selected=col&&col.activites?col.activites.slice():[];
+  renderGardeActPriorityList(wrap,selected,allActs);
+}
+
+function renderGardeActPriorityList(wrap,selected,allActs){
+  var html='<div style="font-size:11px;color:#555;margin-bottom:6px">Cochez les activités, puis réordonnez-les par ordre de <b>priorité d\'affichage</b> (1 = prioritaire) :</div>';
+  // Section activités sélectionnées (ordonnables)
+  html+='<div id="gc-acts-selected" style="margin-bottom:8px">';
+  if(selected.length){
+    html+='<div style="font-size:10px;font-weight:700;color:#1a5fa8;margin-bottom:3px">Activités sélectionnées (par ordre de priorité) :</div>';
+    selected.forEach(function(code,i){
+      var a=allActs.find(function(x){return x.code===code;});
+      var badge=a?'<span class="badge" style="'+actStyle(a)+'">'+escHtml(code)+'</span>':escHtml(code);
+      html+='<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px" data-code="'+escHtml(code)+'">'
+        +'<span style="background:#e0e7ff;border-radius:3px;padding:1px 5px;font-size:10px;min-width:18px;text-align:center;font-weight:700">'+(i+1)+'</span>'
+        +badge
+        +'<button type="button" class="btn btn-sm" style="padding:0 5px" onclick="moveGardeActPriority('+i+',-1)" '+(i===0?'disabled':'')+'>▲</button>'
+        +'<button type="button" class="btn btn-sm" style="padding:0 5px" onclick="moveGardeActPriority('+i+',1)" '+(i===selected.length-1?'disabled':'')+'>▼</button>'
+        +'<button type="button" class="btn btn-danger btn-sm" style="padding:0 5px" onclick="removeGardeActPriority('+i+')">✕</button>'
+        +'</div>';
+    });
+  }else{
+    html+='<div style="color:#aaa;font-style:italic;font-size:11px">Aucune activité sélectionnée (= toutes acceptées)</div>';
+  }
+  html+='</div>';
+  // Section ajout d'activité
+  html+='<div style="font-size:10px;font-weight:700;color:#555;margin-bottom:3px">Ajouter une activité :</div>';
+  html+='<div style="display:flex;flex-wrap:wrap;gap:4px">';
+  allActs.forEach(function(a){
+    if(selected.indexOf(a.code)>=0)return; // déjà sélectionnée
+    html+='<button type="button" class="btn btn-sm" style="'+actStyle(a)+';padding:2px 7px;font-size:11px" onclick="addGardeActPriority(\''+escHtml(a.code)+'\')">'+escHtml(a.code)+'</button>';
+  });
+  html+='</div>';
+  wrap.innerHTML=html;
+  // Stocker la liste courante
+  wrap.dataset.selected=JSON.stringify(selected);
+}
+
+function addGardeActPriority(code){
+  var wrap=document.getElementById('cfg-gc-acts-wrap');if(!wrap)return;
+  var selected=JSON.parse(wrap.dataset.selected||'[]');
+  if(selected.indexOf(code)<0)selected.push(code);
+  var allActs=(DB.activites||DEFAULT_ACTIVITES).filter(function(a){return !a.archived;});
+  renderGardeActPriorityList(wrap,selected,allActs);
+}
+function removeGardeActPriority(idx){
+  var wrap=document.getElementById('cfg-gc-acts-wrap');if(!wrap)return;
+  var selected=JSON.parse(wrap.dataset.selected||'[]');
+  selected.splice(idx,1);
+  var allActs=(DB.activites||DEFAULT_ACTIVITES).filter(function(a){return !a.archived;});
+  renderGardeActPriorityList(wrap,selected,allActs);
+}
+function moveGardeActPriority(idx,dir){
+  var wrap=document.getElementById('cfg-gc-acts-wrap');if(!wrap)return;
+  var selected=JSON.parse(wrap.dataset.selected||'[]');
+  var ni=idx+dir;if(ni<0||ni>=selected.length)return;
+  var tmp=selected[idx];selected[idx]=selected[ni];selected[ni]=tmp;
+  var allActs=(DB.activites||DEFAULT_ACTIVITES).filter(function(a){return !a.archived;});
+  renderGardeActPriorityList(wrap,selected,allActs);
+}
+
+function saveGardeCol(){
+  var tid=qv('cfg-gt-sel-active');if(!tid){alert('Sélectionnez un tableau');return;}
+  var t=getGardeTableById(tid);if(!t)return;
+  if(!t.cols)t.cols=[];
+  var label=qv('cfg-gc-label').trim(),slot=qv('cfg-gc-slot'),jours=qv('cfg-gc-jours'),editId=qv('cfg-gc-edit-id');
+  if(!label){alert('Libellé obligatoire');return;}
+  var acts=[];
+  var wrap=document.getElementById('cfg-gc-acts-wrap');
+  if(wrap&&wrap.dataset.selected){try{acts=JSON.parse(wrap.dataset.selected);}catch(e){acts=[];}}
+  else{document.querySelectorAll('.gc-act-dyn:checked').forEach(function(cb){acts.push(cb.value);});}
+  if(editId){
+    var idx=t.cols.findIndex(function(c){return c.id===editId;});
+    if(idx>=0){t.cols[idx].label=label;t.cols[idx].slot=slot;t.cols[idx].jours=jours;t.cols[idx].activites=acts;}
+  }else{
+    t.cols.push({id:'gc_'+Date.now(),label:label,slot:slot,jours:jours,activites:acts});
+  }
+  cancelGardeColEdit();scheduleSave();renderGardeColsForSelected();renderGardeTablesList();
+}
+function editGardeColDyn(id){
+  var tid=qv('cfg-gt-sel-active');var t=tid?getGardeTableById(tid):null;if(!t)return;
+  var col=(t.cols||[]).find(function(c){return c.id===id;});if(!col)return;
+  document.getElementById('cfg-gc-label').value=col.label;
+  document.getElementById('cfg-gc-slot').value=col.slot;
+  document.getElementById('cfg-gc-jours').value=col.jours||'tous';
+  document.getElementById('cfg-gc-edit-id').value=id;
+  document.getElementById('gc-col-form-title').textContent='Modifier : '+col.label;
+  document.getElementById('btn-cancel-gc').style.display='';
+  refreshGardeActCheckboxesDyn();
+}
+function cancelGardeColEdit(){
+  document.getElementById('cfg-gc-label').value='';
+  document.getElementById('cfg-gc-edit-id').value='';
+  document.getElementById('gc-col-form-title').textContent='Nouvelle colonne';
+  document.getElementById('btn-cancel-gc').style.display='none';
+  refreshGardeActCheckboxesDyn();
+}
+function removeGardeColDyn(id){
+  var tid=qv('cfg-gt-sel-active');var t=tid?getGardeTableById(tid):null;if(!t)return;
+  if(!confirm('Supprimer cette colonne ?'))return;
+  t.cols=(t.cols||[]).filter(function(c){return c.id!==id;});
+  scheduleSave();renderGardeColsForSelected();renderGardeTablesList();
+}
+function moveGardeColDyn(idx,dir){
+  var tid=qv('cfg-gt-sel-active');var t=tid?getGardeTableById(tid):null;if(!t||!t.cols)return;
+  var ni=idx+dir;if(ni<0||ni>=t.cols.length)return;
+  var tmp=t.cols[idx];t.cols[idx]=t.cols[ni];t.cols[ni]=tmp;
+  scheduleSave();renderGardeColsForSelected();
+}
+function resetGardeColsForSelected(){
+  var tid=qv('cfg-gt-sel-active');var t=tid?getGardeTableById(tid):null;if(!t)return;
+  if(!confirm('Réinitialiser les colonnes de "'+t.label+'" ?'))return;
+  var def=DEFAULT_GARDE_TABLES.find(function(x){return x.id===tid;});
+  t.cols=def?JSON.parse(JSON.stringify(def.cols)):[];
+  scheduleSave();renderGardeColsForSelected();
+}
+
+function refreshGardeSlotSelect(){
+  var slots=getActiveSlots();
+  var el=document.getElementById('cfg-gc-slot');if(!el)return;
+  var prev=el.value;
+  el.innerHTML=slots.map(function(s){return'<option value="'+escHtml(s.id)+'">'+escHtml(s.label)+'</option>';}).join('');
+  if(prev)el.value=prev;
+}
+
+// ══════════════════════════════════════════════════════
+// COLONNES DÉCLARATIF — config UI
+// ══════════════════════════════════════════════════════
+function getDeclCols(){return DB.declCols||DEFAULT_DECL_COLS;}
+
+function renderDeclColList(){
+  var el=document.getElementById('decl-col-list');if(!el)return;
+  var cols=getDeclCols();
+  var jourL={'tous':'Tous les jours','sem':'Semaine','we':'WE/Fériés'};
+  el.innerHTML=cols.map(function(col,idx){
+    var desc=col.type==='note'?'Texte libre':'Slot : '+(col.slot||'?')+' | Activités : '+(col.activites&&col.activites.length?col.activites.join(', '):'Toutes')+' | '+(jourL[col.jours||'tous']);
+    return '<div class="slot-item"><div><b>'+escHtml(col.label)+'</b> <span style="font-size:10px;background:'+(col.type==='note'?'#f3f4f6':'#dbeafe')+';padding:1px 5px;border-radius:3px">'+escHtml(col.type==='note'?'Note':'Garde')+'</span><br><span style="font-size:11px;color:#666">'+escHtml(desc)+'</span></div>'
+      +'<div style="display:flex;gap:4px">'
+      +'<button class="btn btn-sm" data-idx="'+idx+'" onclick="moveDeclCol(parseInt(this.dataset.idx),-1)" '+(idx===0?'disabled':'')+'>▲</button>'
+      +'<button class="btn btn-sm" data-idx="'+idx+'" onclick="moveDeclCol(parseInt(this.dataset.idx),1)" '+(idx===cols.length-1?'disabled':'')+'>▼</button>'
+      +'<button class="btn btn-warn btn-sm" data-cid="'+escHtml(col.id)+'" onclick="editDeclCol(this.dataset.cid)">✏️</button>'
+      +'<button class="btn btn-danger btn-sm" data-cid="'+escHtml(col.id)+'" onclick="removeDeclCol(this.dataset.cid)">✕</button>'
+      +'</div></div>';
+  }).join('');
+}
+
+function refreshDeclSlotSelect(){
+  var slots=getActiveSlots();
+  var el=document.getElementById('cfg-dc-slot');if(!el)return;
+  var prev=el.value;
+  el.innerHTML=slots.map(function(s){return'<option value="'+escHtml(s.id)+'">'+escHtml(s.label)+'</option>';}).join('');
+  if(prev)el.value=prev;
+}
+
+function refreshDeclActCheckboxes(){
+  var wrap=document.getElementById('cfg-dc-acts-wrap');if(!wrap)return;
+  var editId=qv('cfg-dc-edit-id');
+  var col=editId?getDeclCols().find(function(c){return c.id===editId;}):null;
+  var acts=(DB.activites||DEFAULT_ACTIVITES).filter(function(a){return !a.archived;});
+  wrap.innerHTML=acts.map(function(a){
+    var chk=col&&col.activites&&col.activites.indexOf(a.code)>=0?'checked':'';
+    return '<label style="min-width:auto;font-weight:400;font-size:11px;display:flex;align-items:center;gap:3px"><input type="checkbox" class="dc-act-cb" value="'+escHtml(a.code)+'" '+chk+'><span class="badge" style="'+actStyle(a)+'">'+escHtml(a.code)+'</span></label>';
+  }).join('');
+}
+
+function onDeclColTypeChange(){
+  var type=qv('cfg-dc-type');
+  var fields=document.getElementById('cfg-dc-garde-fields');
+  if(fields)fields.style.display=type==='note'?'none':'';
+}
+
+function saveDeclCol(){
+  if(!DB.declCols)DB.declCols=JSON.parse(JSON.stringify(DEFAULT_DECL_COLS));
+  var label=qv('cfg-dc-label').trim(),type=qv('cfg-dc-type'),slot=qv('cfg-dc-slot'),jours=qv('cfg-dc-jours'),editId=qv('cfg-dc-edit-id');
+  if(!label){alert('Libellé obligatoire');return;}
+  var acts=[];document.querySelectorAll('.dc-act-cb:checked').forEach(function(cb){acts.push(cb.value);});
+  var colData={label:label,type:type,slot:type==='note'?'':slot,jours:jours,activites:type==='note'?[]:acts};
+  if(editId){
+    var idx=DB.declCols.findIndex(function(c){return c.id===editId;});
+    if(idx>=0)DB.declCols[idx]=Object.assign({},DB.declCols[idx],colData);
+  }else{
+    colData.id='dc_'+Date.now();
+    DB.declCols.push(colData);
+  }
+  cancelDeclColEdit();scheduleSave();renderDeclColList();
+}
+
+function editDeclCol(id){
+  var col=getDeclCols().find(function(c){return c.id===id;});if(!col)return;
+  document.getElementById('cfg-dc-label').value=col.label;
+  document.getElementById('cfg-dc-type').value=col.type||'garde';
+  document.getElementById('cfg-dc-slot').value=col.slot||'';
+  document.getElementById('cfg-dc-jours').value=col.jours||'tous';
+  document.getElementById('cfg-dc-edit-id').value=id;
+  document.getElementById('decl-col-form-title').textContent='Modifier : '+col.label;
+  document.getElementById('btn-cancel-dc').style.display='';
+  onDeclColTypeChange();
+  refreshDeclActCheckboxes();
+}
+
+function cancelDeclColEdit(){
+  document.getElementById('cfg-dc-label').value='';
+  document.getElementById('cfg-dc-type').value='garde';
+  document.getElementById('cfg-dc-edit-id').value='';
+  document.getElementById('decl-col-form-title').textContent='Nouvelle colonne';
+  document.getElementById('btn-cancel-dc').style.display='none';
+  onDeclColTypeChange();
+  refreshDeclActCheckboxes();
+}
+
+function removeDeclCol(id){
+  if(!confirm('Supprimer cette colonne ?'))return;
+  DB.declCols=DB.declCols.filter(function(c){return c.id!==id;});
+  scheduleSave();renderDeclColList();
+}
+
+function moveDeclCol(idx,dir){
+  if(!DB.declCols)DB.declCols=JSON.parse(JSON.stringify(DEFAULT_DECL_COLS));
+  var ni=idx+dir;if(ni<0||ni>=DB.declCols.length)return;
+  var tmp=DB.declCols[idx];DB.declCols[idx]=DB.declCols[ni];DB.declCols[ni]=tmp;
+  scheduleSave();renderDeclColList();
+}
+
+function resetDeclCols(){
+  if(!confirm('Réinitialiser les colonnes du Déclaratif ?'))return;
+  DB.declCols=JSON.parse(JSON.stringify(DEFAULT_DECL_COLS));
+  scheduleSave();renderDeclColList();
+}
+
+// résoudre une colonne déclaratif pour un jour donné
+function resolveDeclCol(qId,ds,col,sp){
+  if(col.type==='note')return null;
+  if(col.jours==='sem'&&sp)return null;
+  if(col.jours==='we'&&!sp)return null;
+  var acts=col.activites||[];
+  for(var i=0;i<DB.medecins.length;i++){
+    var m=DB.medecins[i];
+    var val=getCell(qId,m.id,ds,col.slot);
+    if(!val)continue;
+    if(acts.length===0||acts.indexOf(val)>=0)return m.nom;
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════════════════
+// ARCHIVAGE
+// ══════════════════════════════════════════════════════
+function archiveQuad(id){var q=DB.quadrimestres.find(function(x){return x.id===id;});if(!q||!confirm('Archiver "'+q.nom+'" ?'))return;q.archived=true;scheduleSave();renderConfig();populateAllSelects();}
+function unarchiveQuad(id){var q=DB.quadrimestres.find(function(x){return x.id===id;});if(!q)return;q.archived=false;scheduleSave();renderConfig();populateAllSelects();renderArchives();}
+function archiveMedecin(id){var m=DB.medecins.find(function(x){return x.id===id;});if(!m||!confirm('Archiver "'+m.nom+'" ?'))return;m.archived=true;scheduleSave();renderMemberList();populateMedecinSelect();}
+function unarchiveMedecin(id){var m=DB.medecins.find(function(x){return x.id===id;});if(!m)return;m.archived=false;scheduleSave();renderMemberList();populateMedecinSelect();renderArchives();}
+function archiveActivite(code){var a=(DB.activites||DEFAULT_ACTIVITES).find(function(x){return x.code===code;});if(!a||!confirm('Archiver "'+code+'" ?'))return;a.archived=true;rebuildActMap();scheduleSave();renderLexique();}
+function unarchiveActivite(code){var a=(DB.activites||DEFAULT_ACTIVITES).find(function(x){return x.code===code;});if(!a)return;a.archived=false;rebuildActMap();scheduleSave();renderLexique();renderArchives();}
+
+// ══════════════════════════════════════════════════════
+// DONNÉES PLANNING
+// ══════════════════════════════════════════════════════
+function getCell(qId,mId,ds,slot){return(DB.planning[qId+'|'+mId+'|'+ds+'|'+slot])||'';}
+function setCell(qId,mId,ds,slot,val){var k=qId+'|'+mId+'|'+ds+'|'+slot;if(val)DB.planning[k]=val;else delete DB.planning[k];scheduleSave();}
+function getNote(qId,ds){return(DB.notes||{})[qId+'|'+ds]||'';}
+function setNote(qId,ds,val){if(!DB.notes)DB.notes={};var k=qId+'|'+ds;if(val)DB.notes[k]=val;else delete DB.notes[k];scheduleSave();}
+
+// ══════════════════════════════════════════════════════
+// SELECTS
+// ══════════════════════════════════════════════════════
+function populateAllSelects(){['sel-quadrimestre','sel-garde-quad','sel-indiv-quad','sel-decl-quad','sel-stats-quad','sel-serv-quad'].forEach(function(id){var el=document.getElementById(id);if(!el)return;var prev=el.value;el.innerHTML='';DB.quadrimestres.filter(function(q){return !q.archived;}).forEach(function(q){var o=document.createElement('option');o.value=q.id;o.textContent=q.nom;el.appendChild(o);});if(prev)el.value=prev;});populateMoisSelects();populateMedecinSelect();populateGardeTableSelect();}
+function populateMoisSelects(){var cfgs=[{sel:'sel-mois',quad:'sel-quadrimestre',wa:false},{sel:'sel-garde-mois',quad:'sel-garde-quad',wa:false},{sel:'sel-indiv-mois',quad:'sel-indiv-quad',wa:true},{sel:'sel-decl-mois',quad:'sel-decl-quad',wa:false},{sel:'sel-stats-mois',quad:'sel-stats-quad',wa:true},{sel:'sel-serv-mois',quad:'sel-serv-quad',wa:false}];cfgs.forEach(function(cfg){var el=document.getElementById(cfg.sel);if(!el)return;var prev=el.value;el.innerHTML='';if(cfg.wa){var o=document.createElement('option');o.value='all';o.textContent='Tout le quadrimestre';el.appendChild(o);}getMoisInQuad(qv(cfg.quad)).forEach(function(m){var o=document.createElement('option');o.value=m.year+'-'+String(m.month).padStart(2,'0');o.textContent=m.label;el.appendChild(o);});if(prev)el.value=prev;});}
+function populateMedecinSelect(){var el=document.getElementById('sel-indiv-medecin');if(!el)return;var prev=el.value;el.innerHTML='<option value="all">Tous les médecins (filtrés par période)</option>';DB.medecins.filter(function(m){return !m.archived;}).forEach(function(m){var o=document.createElement('option');o.value=m.id;o.textContent=m.nom+' ('+m.initiales+')';el.appendChild(o);});var arch=DB.medecins.filter(function(m){return m.archived;});if(arch.length){var og=document.createElement('optgroup');og.label='── Archivés ──';arch.forEach(function(m){var o=document.createElement('option');o.value=m.id;o.textContent='[Archivé] '+m.nom;og.appendChild(o);});el.appendChild(og);}if(prev)el.value=prev;}
+function populateGardeTableSelect(){
+  var el=document.getElementById('sel-garde-table');if(!el)return;
+  var prev=el.value;
+  var active=getActiveGardeTables();
+  el.innerHTML=active.map(function(t){return'<option value="'+escHtml(t.id)+'">'+escHtml(t.label)+'</option>';}).join('');
+  if(prev&&active.find(function(t){return t.id===prev;}))el.value=prev;
+}
+function onQuadChange(){populateMoisSelects();renderPlanning();}
+function onGardeQuadChange(){populateMoisSelects();renderGarde();}
+function onIndivQuadChange(){populateMoisSelects();renderIndividuel();}
+function onDeclQuadChange(){populateMoisSelects();renderDeclaratif();}
+function onStatsQuadChange(){populateMoisSelects();renderStats();}
+function onServQuadChange(){populateMoisSelects();renderServices();}
+
+// ══════════════════════════════════════════════════════
+// RENDER PLANNING
+// ══════════════════════════════════════════════════════
+function renderPlanning(){
+  var qId=qv('sel-quadrimestre'),moisVal=qv('sel-mois');if(!qId||!moisVal)return;
+  var parts=moisVal.split('-'),year=parseInt(parts[0]),month=parseInt(parts[1]);
+  var days=getMoisDays(year,month),per=getPeriodFromMois(moisVal),meds=getMedsForPeriod(per.debut,per.fin);
+  var html='<table class="planning"><thead><tr><th class="th-name" rowspan="2">Nom</th>';
+  days.forEach(function(d){var ds=dateStr(d),cl=isFerie(ds)?'ferie':isWE(d)?'we':'';var slotsDay=getSlotsForDay(d,ds);var ferNom=isFerie(ds)?('<br><span style="font-size:9px;font-weight:400">'+getFerieNom(ds)+'</span>'):'';html+='<th class="th-day '+cl+'" colspan="'+slotsDay.length+'">'+JOURS[d.getDay()]+'<br>'+d.getDate()+ferNom+'</th>';});
+  html+='<th rowspan="2" style="background:#2c4a72;min-width:40px">VAC</th></tr><tr>';
+  days.forEach(function(d){var ds=dateStr(d),cl=isFerie(ds)?'ferie':isWE(d)?'we':'';getSlotsForDay(d,ds).forEach(function(s){var active=isSlotActive(s,ds);html+='<th class="th-slot '+(active?cl:'inactive')+'" title="'+escHtml(s.label)+(active?'':' (inactif)')+'">'+escHtml(s.court)+'</th>';});});
+  html+='</tr></thead><tbody>';
+  meds.forEach(function(med){
+    html+='<tr class="data-row"><td class="td-name">'+escHtml(med.initiales)+'<br><span style="font-size:10px;color:#888">'+(med.temps<100?med.temps+'%':'')+'</span></td>';
+    var vac=0;
+    days.forEach(function(d){var ds=dateStr(d),cl=isFerie(ds)?'ferie':isWE(d)?'we':'',vs=isVacSco(ds)?'vac-sco':'';var outOfRange=(med.dateDebut&&ds<med.dateDebut)||(med.dateFin&&ds>med.dateFin);
+      getSlotsForDay(d,ds).forEach(function(s){var active=isSlotActive(s,ds);var val=getCell(qId,med.id,ds,s.id),act=ACT_MAP[val],as=act?actStyle(act):'';if(act)vac+=act.coeff;
+        if(!active){html+='<td class="cell '+cl+' '+vs+' slot-inactive">'+(val?'<span class="badge" style="opacity:0.6;'+as+'">'+escHtml(val)+'</span>':'')+'</td>';}
+        else{html+='<td class="cell '+cl+' '+vs+'" style="'+as+(outOfRange&&!val?'background:#f8f8f8;':'')+'" onclick="openModal(\''+qId+'\',\''+med.id+'\',\''+ds+'\',\''+escHtml(s.id)+'\')">'+(val?'<span class="badge" style="'+as+'">'+escHtml(val)+'</span>':'')+'</td>';}
+      });
+    });
+    html+='<td style="text-align:center;font-weight:700;background:#e8eef8;font-size:12px">'+vac.toFixed(2)+'</td></tr>';
+  });
+  html+='<tr><td class="td-name" style="background:#fffde7;font-size:10px;color:#888;font-style:italic;font-weight:400">Notes</td>';
+  days.forEach(function(d){var ds=dateStr(d),cl=isFerie(ds)?'ferie':isWE(d)?'we':'';var slotsDay=getSlotsForDay(d,ds);html+='<td class="note-global '+cl+'" colspan="'+slotsDay.length+'" contenteditable="true" onblur="setNote(\''+qId+'\',\''+ds+'\',this.innerText.trim())">'+escHtml(getNote(qId,ds))+'</td>';});
+  html+='<td style="background:#fffde7"></td></tr></tbody></table>';
+  document.getElementById('planning-wrap').innerHTML=html;
+  renderTotaux(qId,days,meds);
+}
+function renderTotaux(qId,days,meds){var actCols=ACTIVITES.filter(function(a){return ['clinique','garde','had'].includes(a.type);});var html='<table class="totaux"><thead><tr><th>Medecin</th>';actCols.forEach(function(a){html+='<th title="'+escHtml(a.label)+'">'+escHtml(a.code)+'</th>';});html+='<th>CA</th><th>RTT</th><th>AT</th><th style="background:#1a4a8a">VAC total</th></tr></thead><tbody>';meds.forEach(function(med){var counts={};ACTIVITES.forEach(function(a){counts[a.code]=0;});days.forEach(function(d){var ds=dateStr(d);getSlotsForDay(d,ds).forEach(function(s){var v=getCell(qId,med.id,ds,s.id);if(v&&counts[v]!==undefined)counts[v]++;});});var vac=0;ACTIVITES.forEach(function(a){if(a.coeff&&!['CA','RTT','AT'].includes(a.code))vac+=counts[a.code]*a.coeff;});vac+=counts['AT']*0.575;html+='<tr><td class="td-name">'+escHtml(med.nom)+'</td>';actCols.forEach(function(a){html+='<td>'+(counts[a.code]||'')+'</td>';});html+='<td>'+(counts['CA']||'')+'</td><td>'+(counts['RTT']||'')+'</td><td>'+(counts['AT']||'')+'</td><td style="font-weight:700;background:#d8e4ff">'+vac.toFixed(2)+'</td></tr>';});html+='</tbody></table>';document.getElementById('totaux-wrap').innerHTML=html;}
+
+// ══════════════════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════════════════
+var _ctx={};
+function openModal(qId,mId,ds,slotId){_ctx={qId:qId,mId:mId,ds:ds,slot:slotId};var med=DB.medecins.find(function(m){return m.id===mId;});var d=parseDate(ds),slot=getSlots().find(function(s){return s.id===slotId;}),slotLabel=slot?slot.label:slotId;document.getElementById('modal-title').textContent=(med?med.nom:mId)+' - '+JOURS[d.getDay()]+' '+d.getDate()+' - '+slotLabel;var current=getCell(qId,mId,ds,slotId),html='';(DB.types||DEFAULT_TYPES).forEach(function(t){var acts=ACTIVITES.filter(function(a){return a.type===t.id&&isActAvailableOnDate(a,ds);});if(!acts.length)return;html+='<div style="margin-bottom:10px"><div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;padding:4px 8px;border-radius:5px;background:'+t.color+'18;border-left:3px solid '+t.color+'"><span style="font-size:18px">'+(t.icon||'📋')+'</span><span style="font-size:12px;font-weight:700;color:'+t.color+'">'+escHtml(t.label)+'</span></div><div class="act-grid">';acts.forEach(function(a){var isSel=current===a.code;html+='<div style="background:'+a.bg+';color:'+a.color+';border:'+(isSel?'2px solid #1a5fa8':'1.5px solid rgba(0,0,0,0.10)')+';box-shadow:'+(isSel?'0 0 0 2px #1a5fa8':'none')+';border-radius:6px;padding:7px 4px;cursor:pointer;text-align:center;font-size:11px;font-weight:700;line-height:1.4" onclick="selectActModal(this,\''+escHtml(a.code)+'\')">'+escHtml(a.code)+'<br><span style="font-size:9px;font-weight:400;opacity:0.85">'+escHtml(a.label)+'</span></div>';});html+='</div></div>';});document.getElementById('modal-body').innerHTML=html;document.getElementById('modal-overlay').classList.add('open');}
+function selectActModal(el,code){document.querySelectorAll('#modal-body div[onclick]').forEach(function(b){b.style.border='1.5px solid rgba(0,0,0,0.10)';b.style.boxShadow='none';});el.style.border='2px solid #1a5fa8';el.style.boxShadow='0 0 0 2px #1a5fa8';_ctx.selected=code;}
+function confirmModal(){var code=_ctx.selected;if(code)setCell(_ctx.qId,_ctx.mId,_ctx.ds,_ctx.slot,code);closeModal();renderPlanning();}
+function clearModalCell(){setCell(_ctx.qId,_ctx.mId,_ctx.ds,_ctx.slot,'');closeModal();renderPlanning();}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');_ctx={};}
+document.getElementById('modal-overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+// ══════════════════════════════════════════════════════
+// GARDES — rendu dynamique
+// ══════════════════════════════════════════════════════
+function renderGarde(){
+  var qId=qv('sel-garde-quad'),moisVal=qv('sel-garde-mois'),tid=qv('sel-garde-table');
+  if(!qId||!moisVal||!tid)return;
+  var gt=getGardeTableById(tid);if(!gt)return;
+  var p=moisVal.split('-'),days=getMoisDays(parseInt(p[0]),parseInt(p[1]));
+  // Barre de couleur du tableau
+  var bar=document.getElementById('garde-header-bar');
+  if(bar)bar.innerHTML='<div style="display:inline-block;padding:4px 14px;border-radius:4px;font-weight:700;font-size:13px;color:#fff;background:'+gt.color+'">'+escHtml(gt.label)+'</div>';
+  renderGardeTableDyn(qId,days,gt);
+  renderPhoneList();
+}
+
+function renderGardeTableDyn(qId,days,gt){
+  var cols=gt.cols||[];
+  // Toutes les colonnes utilisées ce mois
+  var allColIds={};days.forEach(function(d){var ds=dateStr(d),sp=isSpecialDay(d,ds);getColsForDay(gt,sp).forEach(function(c){allColIds[c.id]=c;});});
+  var allCols=cols.filter(function(c){return allColIds[c.id];});
+  var html='<table class="garde"><thead><tr><th style="background:'+gt.color+'">Jour</th><th style="background:'+gt.color+'">Date</th>';
+  allCols.forEach(function(col){html+='<th style="background:'+gt.color+'">'+escHtml(col.label)+'</th>';});
+  html+='</tr></thead><tbody>';
+  days.forEach(function(d){
+    var ds=dateStr(d),we=isWE(d),fer=isFerie(ds),sp=we||fer,cl=fer?'day-ferie':we?'day-we':'',vs=isVacSco(ds)?'vac-sco':'';
+    var visibleCols=getColsForDay(gt,sp);
+    html+='<tr><td class="'+cl+' '+vs+'" style="font-weight:600">'+JOURS[d.getDay()]+'</td><td class="'+cl+' '+vs+'">'+d.getDate()+(fer?' 🎉':'')+'</td>';
+    allCols.forEach(function(col){
+      var isVisible=visibleCols.some(function(c){return c.id===col.id;});
+      if(!isVisible){html+='<td class="'+cl+'" style="background:#f5f5f5;color:#ccc;text-align:center">—</td>';return;}
+      var nom=resolveGardeCol(qId,ds,col,sp);
+      html+='<td class="'+cl+'" style="text-align:center">'+(nom?'<span class="tag" style="background:'+gt.color+'22;color:'+gt.color+';border:1px solid '+gt.color+'44">'+escHtml(nom)+'</span>':'<span style="color:#ccc">-</span>')+'</td>';
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById('garde-wrap').innerHTML=html;
+}
+
+function renderPhoneList(){var el=document.getElementById('phone-list');if(!el)return;var meds=DB.medecins.filter(function(m){return m.id!=='DIV'&&!m.archived&&(m.raccourci||m.telPro||m.telPerso);});if(!meds.length){el.innerHTML='';return;}var half=Math.ceil(meds.length/2),L2=meds.slice(0,half),R2=meds.slice(half);var html='<table style="border-collapse:collapse;width:100%;font-size:12px;margin-bottom:8px"><thead><tr style="background:#2c4a72;color:#fff"><th style="border:1px solid #bbb;padding:4px 8px">Medecin</th><th style="border:1px solid #bbb;padding:4px 8px;text-align:center">Rcc</th><th style="border:1px solid #bbb;padding:4px 8px;text-align:center">Tel. pro</th><th style="border:1px solid #bbb;padding:4px 8px;text-align:center">Tel. perso</th><th style="border:1px solid #bbb;padding:4px 8px">Medecin</th><th style="border:1px solid #bbb;padding:4px 8px;text-align:center">Rcc</th><th style="border:1px solid #bbb;padding:4px 8px;text-align:center">Tel. pro</th><th style="border:1px solid #bbb;padding:4px 8px;text-align:center">Tel. perso</th></tr></thead><tbody>';for(var i=0;i<half;i++){var L=L2[i],R=R2[i]||null,bg=i%2===0?'#fff':'#f5f5f5';html+='<tr style="background:'+bg+'"><td style="border:1px solid #bbb;padding:3px 8px;font-weight:600">'+(L?escHtml(L.nom):'')+'</td><td style="border:1px solid #bbb;padding:3px 8px;text-align:center">'+(L?L.raccourci||'':'')+'</td><td style="border:1px solid #bbb;padding:3px 8px;text-align:center">'+(L?L.telPro||'':'')+'</td><td style="border:1px solid #bbb;padding:3px 8px;text-align:center">'+(L?L.telPerso||'':'')+'</td><td style="border:1px solid #bbb;padding:3px 8px;font-weight:600">'+(R?escHtml(R.nom):'')+'</td><td style="border:1px solid #bbb;padding:3px 8px;text-align:center">'+(R?R.raccourci||'':'')+'</td><td style="border:1px solid #bbb;padding:3px 8px;text-align:center">'+(R?R.telPro||'':'')+'</td><td style="border:1px solid #bbb;padding:3px 8px;text-align:center">'+(R?R.telPerso||'':'')+'</td></tr>';}  html+='</tbody></table>';
+  var gt=getCurrentGardeTable();
+  if(gt&&gt.numGarde)html+='<div style="background:#cc0000;color:#fff;font-weight:700;font-size:13px;padding:6px 12px;border-radius:4px;display:inline-block;margin-top:6px">'+escHtml(gt.label.toUpperCase())+' : '+escHtml(gt.numGarde)+'</div>';
+  el.innerHTML=html;}
+
+// ══════════════════════════════════════════════════════
+// EXPORT PDF GARDES
+// ══════════════════════════════════════════════════════
+function exportGardePDF(){
+  var jsPDF=window.jspdf.jsPDF;
+  var qId=qv('sel-garde-quad'),moisVal=qv('sel-garde-mois'),tid=qv('sel-garde-table');if(!qId||!moisVal||!tid)return;
+  var gt=getGardeTableById(tid);if(!gt)return;
+  var p=moisVal.split('-'),year=parseInt(p[0]),month=parseInt(p[1]),days=getMoisDays(year,month);
+  var quad=DB.quadrimestres.find(function(q){return q.id===qId;}),moisLabel=MOIS_LABELS[month-1]+' '+year;
+  var allColIds={};days.forEach(function(d){var ds=dateStr(d),sp=isSpecialDay(d,ds);getColsForDay(gt,sp).forEach(function(c){allColIds[c.id]=c;});});
+  var allCols=(gt.cols||[]).filter(function(c){return allColIds[c.id];});
+  var rgb=hexToRgb(gt.color);
+  var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  var PW=210,PH=297,ML=8,MR=8,MT=10,W=PW-ML-MR,y=MT;
+  doc.setFillColor(rgb[0],rgb[1],rgb[2]);doc.rect(ML,y,W,8,'F');doc.setTextColor(255,255,255);doc.setFontSize(10);doc.setFont('helvetica','bold');
+  doc.text('PLANNING '+gt.label.toUpperCase()+' - '+moisLabel.toUpperCase(),PW/2,y+5.5,{align:'center'});y+=9;
+  if(quad){doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);doc.text(quad.nom,PW/2,y+3,{align:'center'});y+=5;}
+  var rows=[];
+  days.forEach(function(d){
+    var ds=dateStr(d),we=isWE(d),fer=isFerie(ds),sp=we||fer;
+    var jourStr=JOURS_LONG[d.getDay()].substring(0,4).toUpperCase()+'.',ds2=d.getDate()+'-'+MOIS_COURT[d.getMonth()];
+    var row=[jourStr,ds2];
+    allCols.forEach(function(col){
+      var isVisible=getColsForDay(gt,sp).some(function(c){return c.id===col.id;});
+      if(!isVisible){row.push('');return;}
+      var nom=resolveGardeCol(qId,ds,col,sp);
+      if(nom){var med=DB.medecins.find(function(m){return m.nom===nom;});nom=med?medNomCourt(med):nom.split(/\s+/).pop();}
+      row.push(nom||'');
+    });
+    rows.push({data:row,we:we,fer:fer});
+  });
+  var headRow=['JOUR','DATE'].concat(allCols.map(function(c){return c.label;}));
+  var cJour=13,cDate=13;
+  var cCol=Math.max(6,Math.floor((W-cJour-cDate)/Math.max(1,allCols.length)));
+  var nb=rows.length+2;
+  var fs=cCol<14?5.5:cCol<18?6.5:7.5;
+  fs=nb>33?Math.min(fs,7):fs;
+  var pad_=fs<6?0.5:fs<7?1.2:1.6;
+  var colStyles={0:{halign:'left',cellWidth:cJour,fontStyle:'bold'},1:{halign:'left',cellWidth:cDate}};
+  allCols.forEach(function(c,i){colStyles[i+2]={cellWidth:cCol};});
+  doc.autoTable({head:[headRow],body:rows.map(function(r){return r.data;}),startY:y,margin:{left:ML,right:MR},styles:{fontSize:fs,cellPadding:pad_,valign:'middle',halign:'center',lineColor:[180,180,180],lineWidth:0.2},headStyles:{fillColor:rgb,textColor:255,fontStyle:'bold',fontSize:Math.max(fs-0.5,6),halign:'center'},columnStyles:colStyles,didParseCell:function(data){if(data.section==='body'){var r=rows[data.row.index];if(!r)return;if(r.fer)data.cell.styles.fillColor=[255,228,228];else if(r.we)data.cell.styles.fillColor=[255,248,230];if(data.column.index>=2&&data.cell.raw){data.cell.styles.textColor=[0,0,0];data.cell.styles.fontStyle='bold';}}},theme:'grid'});
+  y=doc.lastAutoTable.finalY+3;
+  var medsPhone=DB.medecins.filter(function(m){return m.id!=='DIV'&&!m.archived&&(m.raccourci||m.telPro||m.telPerso);});
+  if(medsPhone.length&&y<PH-30){var half2=Math.ceil(medsPhone.length/2),phoneRows=[];for(var i=0;i<half2;i++){var L=medsPhone[i],R=medsPhone[half2+i]||null;phoneRows.push([L?L.nom:'',L?L.raccourci||'':'',L?L.telPro||'':'',L?L.telPerso||'':'',R?R.nom:'',R?R.raccourci||'':'',R?R.telPro||'':'',R?R.telPerso||'':'']);}var hw=W/2;doc.autoTable({head:[['Medecin','Rcc','Tel. pro','Tel. perso','Medecin','Rcc','Tel. pro','Tel. perso']],body:phoneRows,startY:y,margin:{left:ML,right:MR},styles:{fontSize:6.5,cellPadding:1,valign:'middle',lineColor:[180,180,180],lineWidth:0.2},headStyles:{fillColor:[44,74,114],textColor:255,fontStyle:'bold',fontSize:6.5,halign:'center'},columnStyles:{0:{fontStyle:'bold',cellWidth:hw*0.38},1:{halign:'center',cellWidth:hw*0.12},2:{halign:'center',cellWidth:hw*0.25},3:{halign:'center',cellWidth:hw*0.25},4:{fontStyle:'bold',cellWidth:hw*0.38},5:{halign:'center',cellWidth:hw*0.12},6:{halign:'center',cellWidth:hw*0.25},7:{halign:'center',cellWidth:hw*0.25}},theme:'grid'});y=doc.lastAutoTable.finalY+3;}
+  if(gt.numGarde){var txt=gt.label.toUpperCase()+' : '+gt.numGarde;doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setFillColor(180,0,0);doc.rect(ML,y,W,7,'F');doc.setTextColor(255,255,255);doc.text(txt,ML+5,y+4.8);y+=9;}
+  doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(150,150,150);doc.text('Généré le '+new Date().toLocaleDateString('fr-FR'),PW-MR,PH-3,{align:'right'});
+  doc.save(gt.label.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+moisVal+'.pdf');
+}
+
+// ══════════════════════════════════════════════════════
+// INDIVIDUEL
+// ══════════════════════════════════════════════════════
+function getMedsForIndiv(qId,moisVal,medVal){if(medVal&&medVal!=='all')return DB.medecins.filter(function(m){return m.id===medVal;});var q=DB.quadrimestres.find(function(x){return x.id===qId;}),pDebut,pFin;if(moisVal&&moisVal!=='all'){var per=getPeriodFromMois(moisVal);pDebut=per.debut;pFin=per.fin;}else{pDebut=q?q.debut:'';pFin=q?q.fin:'';}return getMedsForPeriod(pDebut,pFin);}
+function renderIndividuel(){var qId=qv('sel-indiv-quad'),moisVal=qv('sel-indiv-mois'),medVal=qv('sel-indiv-medecin');if(!qId)return;var moisList=getMoisInQuad(qId);if(moisVal&&moisVal!=='all')moisList=moisList.filter(function(m){return m.year+'-'+String(m.month).padStart(2,'0')===moisVal;});var meds=getMedsForIndiv(qId,moisVal,medVal),allSlots=getActiveSlots(),html='';if(meds.length===1){var med=meds[0];html='<div style="background:#fff;border:1px solid #ddd;border-radius:6px;overflow:hidden"><div style="background:#2c4a72;color:#fff;padding:8px 14px;font-weight:700">'+escHtml(med.nom)+' ('+escHtml(med.initiales)+') - '+med.temps+'%'+(med.telPerso?' - '+med.telPerso:'')+'</div><div style="overflow-x:auto"><table class="planning"><thead><tr><th class="th-name">Date</th>';allSlots.forEach(function(s){html+='<th class="th-slot">'+escHtml(s.court)+'</th>';});html+='<th>VAC</th></tr></thead><tbody>';var totalVAC=0,actCounts={};moisList.forEach(function(m){html+='<tr><td colspan="'+(allSlots.length+2)+'" style="background:#e8edf5;font-weight:700;font-size:12px;padding:4px 8px">'+m.label+'</td></tr>';getMoisDays(m.year,m.month).forEach(function(d){var ds=dateStr(d),cl=isFerie(ds)?'ferie':isWE(d)?'we':'',vs=isVacSco(ds)?'vac-sco':'',outOfRange=(med.dateDebut&&ds<med.dateDebut)||(med.dateFin&&ds>med.dateFin),rowVAC=0;var rh='<tr class="data-row"><td class="td-name '+cl+'" style="font-weight:400;font-size:11px'+(outOfRange?';color:#ccc':'')+'">'+JOURS[d.getDay()]+' '+d.getDate()+(isFerie(ds)?' 🎉':'')+'</td>';allSlots.forEach(function(s){var val=getCell(qId,med.id,ds,s.id),act=ACT_MAP[val],as=act?actStyle(act):'';if(act){rowVAC+=act.coeff;totalVAC+=act.coeff;actCounts[val]=(actCounts[val]||0)+1;}rh+='<td class="cell '+cl+' '+vs+'" style="'+(outOfRange&&!val?'background:#f8f8f8;':as)+'">'+(val?'<span class="badge" style="'+as+'">'+escHtml(val)+'</span>':'')+'</td>';});rh+='<td style="text-align:center;font-size:11px;font-weight:600">'+(rowVAC>0?rowVAC.toFixed(2):'')+'</td></tr>';html+=rh;var note=getNote(qId,ds);if(note)html+='<tr><td class="td-name '+cl+'" style="font-size:10px;color:#888;font-style:italic">Note</td><td colspan="'+(allSlots.length+1)+'" style="font-size:11px;color:#555;padding:2px 6px">'+escHtml(note)+'</td></tr>';});});html+='</tbody></table></div><div style="padding:10px 14px;background:#f5f7fa;border-top:1px solid #ddd;display:flex;gap:14px;flex-wrap:wrap;font-size:12px"><span><b>Total VAC :</b> '+totalVAC.toFixed(2)+'</span>';['CA','RTT','AT'].forEach(function(c){if(actCounts[c])html+='<span><b>'+c+' :</b> '+actCounts[c]+'</span>';});html+='</div></div>';}else{html='<div style="overflow-x:auto;background:#fff;border:1px solid #ddd;border-radius:6px"><table style="border-collapse:collapse;table-layout:auto"><thead><tr><th style="background:#2c4a72;color:#fff;padding:5px 8px;font-size:11px;border:1px solid #bbb;position:sticky;left:0;z-index:3;min-width:70px">Date</th>';meds.forEach(function(med){html+='<th colspan="'+(allSlots.length+1)+'" style="background:#2c4a72;color:#fff;padding:5px 8px;font-size:11px;border:1px solid #bbb;text-align:center;white-space:nowrap">'+escHtml(med.nom)+' ('+escHtml(med.initiales)+') - '+med.temps+'%</th>';});html+='</tr><tr><th style="background:#1a5fa8;color:#fff;padding:3px 6px;font-size:10px;border:1px solid #bbb;position:sticky;left:0;z-index:3"></th>';meds.forEach(function(){allSlots.forEach(function(s){html+='<th style="background:#1a5fa8;color:#fff;padding:3px 4px;font-size:10px;border:1px solid #bbb;text-align:center;min-width:32px">'+escHtml(s.court)+'</th>';});html+='<th style="background:#1a5fa8;color:#fff;padding:3px 4px;font-size:10px;border:1px solid #bbb;text-align:center;min-width:30px">VAC</th>';});html+='</tr></thead><tbody>';var vacTotaux={};meds.forEach(function(med){vacTotaux[med.id]=0;});moisList.forEach(function(m){html+='<tr><td colspan="'+(1+meds.length*(allSlots.length+1))+'" style="background:#e8edf5;font-weight:700;font-size:11px;padding:3px 8px;border:1px solid #bbb;position:sticky;left:0">'+m.label+'</td></tr>';getMoisDays(m.year,m.month).forEach(function(d){var ds=dateStr(d),bgDate=isFerie(ds)?'#ffe4e4':isWE(d)?'#fff8e6':'#f0f4ff';html+='<tr><td style="background:'+bgDate+';font-size:10px;padding:2px 6px;border:1px solid #bbb;white-space:nowrap;position:sticky;left:0;z-index:1;font-weight:600">'+JOURS[d.getDay()]+' '+d.getDate()+(isFerie(ds)?' 🎉':'')+'</td>';meds.forEach(function(med){var rowVAC=0,outOfRange=(med.dateDebut&&ds<med.dateDebut)||(med.dateFin&&ds>med.dateFin);allSlots.forEach(function(s){var val=getCell(qId,med.id,ds,s.id),act=ACT_MAP[val],as=act?actStyle(act):'';if(act){rowVAC+=act.coeff;vacTotaux[med.id]+=act.coeff;}html+='<td style="text-align:center;font-size:10px;padding:1px 3px;border:1px solid #bbb;'+(outOfRange&&!val?'background:#f8f8f8;':as)+'">'+(val?'<span class="badge" style="font-size:9px;'+as+'">'+escHtml(val)+'</span>':'')+'</td>';});html+='<td style="text-align:center;font-size:10px;font-weight:600;border:1px solid #bbb;background:#f0f4ff;padding:1px 3px">'+(rowVAC>0?rowVAC.toFixed(1):'')+'</td>';});html+='</tr>';});});html+='<tr><td style="background:#2c4a72;color:#fff;font-size:10px;font-weight:700;padding:3px 6px;border:1px solid #bbb;position:sticky;left:0">TOTAL VAC</td>';meds.forEach(function(med){html+='<td colspan="'+allSlots.length+'" style="border:1px solid #bbb"></td><td style="text-align:center;font-size:11px;font-weight:700;background:#d8e4ff;border:1px solid #bbb;padding:2px 4px">'+vacTotaux[med.id].toFixed(2)+'</td>';});html+='</tr></tbody></table></div>';}document.getElementById('indiv-wrap').innerHTML=html||'<p style="color:#888;padding:20px">Aucune donnée.</p>';}
+
+// ══════════════════════════════════════════════════════
+// DÉCLARATIF — utilise le premier tableau non archivé de chaque "type" pour retrouver les gardes/astreintes
+// ══════════════════════════════════════════════════════
+function getDeclNote(qId,moisVal,ds){return(DB.notesDecl||{})[qId+'|'+moisVal+'|'+ds]||'';}
+var _noteDeclTimer=null;
+function setDeclNote(qId,moisVal,ds,val){if(!DB.notesDecl)DB.notesDecl={};var k=qId+'|'+moisVal+'|'+ds;if(val)DB.notesDecl[k]=val;else delete DB.notesDecl[k];clearTimeout(_noteDeclTimer);_noteDeclTimer=setTimeout(scheduleSave,800);}
+function saveDeclNote(el){setDeclNote(el.dataset.qid,el.dataset.mois,el.dataset.date,el.innerText.trim());}
+function renderDeclaratif(){
+  var qId=qv('sel-decl-quad'),moisVal=qv('sel-decl-mois');if(!qId||!moisVal)return;
+  var p=moisVal.split('-'),year=parseInt(p[0]),month=parseInt(p[1]);
+  var cols=getDeclCols();
+  var html='<table class="decl"><thead><tr><th>Date</th><th>Jour</th>';
+  cols.forEach(function(col){html+='<th>'+escHtml(col.label)+'</th>';});
+  html+='</tr></thead><tbody>';
+  getMoisDays(year,month).forEach(function(d){
+    var ds=dateStr(d),we=isWE(d),fer=isFerie(ds),sp=we||fer,cl=fer?'day-ferie':we?'day-we':'';
+    var noteVal=getDeclNote(qId,moisVal,ds),ferLabel=fer?getFerieNom(ds):'';
+    html+='<tr><td class="'+cl+'" style="font-weight:600">'+d.getDate()+'</td><td class="'+cl+'">'+JOURS[d.getDay()]+'</td>';
+    cols.forEach(function(col){
+      if(col.type==='note'){
+        // Colonne texte libre — pré-remplie avec le nom du jour férié si applicable
+        var val=noteVal||(ferLabel?'Jour férié : '+ferLabel:'');
+        html+='<td class="'+cl+'" contenteditable="true" style="min-width:120px;cursor:text;padding:2px 6px;font-size:11px" data-qid="'+qId+'" data-mois="'+moisVal+'" data-date="'+ds+'" onblur="saveDeclNote(this)">'+escHtml(val)+'</td>';
+      } else {
+        // Colonne garde — cherche le médecin
+        var skip=(col.jours==='sem'&&sp)||(col.jours==='we'&&!sp);
+        var nom=skip?null:resolveDeclCol(qId,ds,col,sp);
+        html+='<td class="'+cl+'" style="text-align:center">'+(nom?'<span class="tag tag-garde">'+escHtml(nom)+'</span>':skip?'<span style="color:#ddd">—</span>':'-')+'</td>';
+      }
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById('decl-wrap').innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════
+// STATS
+// ══════════════════════════════════════════════════════
+function renderStats(){var qId=qv('sel-stats-quad'),moisVal=qv('sel-stats-mois');if(!qId)return;var moisList=getMoisInQuad(qId);if(moisVal&&moisVal!=='all')moisList=moisList.filter(function(m){return m.year+'-'+String(m.month).padStart(2,'0')===moisVal;});var totalJours=moisList.reduce(function(s,m){return s+getMoisDays(m.year,m.month).length;},0);var q=DB.quadrimestres.find(function(x){return x.id===qId;}),pDebut,pFin;if(moisVal&&moisVal!=='all'){var per=getPeriodFromMois(moisVal);pDebut=per.debut;pFin=per.fin;}else{pDebut=q?q.debut:'';pFin=q?q.fin:'';}var meds=getMedsForPeriod(pDebut,pFin);var stats={};meds.forEach(function(med){stats[med.id]={nom:med.nom,initiales:med.initiales,temps:med.temps,vac:0};ACTIVITES.forEach(function(a){stats[med.id][a.code]=0;});moisList.forEach(function(m){getMoisDays(m.year,m.month).forEach(function(d){var ds=dateStr(d);getSlotsForDay(d,ds).forEach(function(s){var v=getCell(qId,med.id,ds,s.id);if(v){stats[med.id][v]=(stats[med.id][v]||0)+1;var act=ACT_MAP[v];if(act)stats[med.id].vac+=act.coeff;}});});});});var html='<div class="stats-grid"><div class="stat-card"><div class="val">'+meds.length+'</div><div class="lbl">Médecins (période)</div></div><div class="stat-card"><div class="val">'+totalJours+'</div><div class="lbl">Jours couverts</div></div><div class="stat-card"><div class="val">'+moisList.length+'</div><div class="lbl">Mois</div></div></div>';html+='<div style="overflow-x:auto"><table class="totaux"><thead><tr><th>Medecin</th><th>Temps</th><th>VAC théo.</th><th>VAC</th><th>Mater</th><th>SDN</th><th>HAD</th><th>HAD J</th><th>Consult</th><th>CEH</th><th>ADM</th><th>CA</th><th>RTT</th><th>AT</th></tr></thead><tbody>';meds.forEach(function(med){var s=stats[med.id],vacTheo=(140*(s.temps/100)).toFixed(1);html+='<tr><td class="td-name">'+escHtml(s.nom)+'</td><td>'+s.temps+'%</td><td style="color:#6b7280">'+vacTheo+'</td><td style="font-weight:700;color:var(--blue)">'+s.vac.toFixed(2)+'</td>';['Mater','SDN','HAD','HAD J','Consult','CEH','ADM'].forEach(function(c){html+='<td>'+(s[c]||'')+'</td>';});html+='<td>'+(s['CA']||'')+'</td><td>'+(s['RTT']||'')+'</td><td>'+(s['AT']||'')+'</td></tr>';});html+='</tbody></table></div>';document.getElementById('stats-wrap').innerHTML=html;}
+
+// ══════════════════════════════════════════════════════
+// SERVICES
+// ══════════════════════════════════════════════════════
+function getSrvSegs(){return DB.srvSegs||DEFAULT_SRV_SEGS;}
+function getSrvCols(){return DB.srvCols||DEFAULT_SRV_COLS;}
+function getSrvMap(){return DB.srvMap||DEFAULT_SRV_MAP;}
+function buildServiceRowDyn(qId,ds){var cols=getSrvCols(),map=getSrvMap(),result={};cols.forEach(function(c){result[c.id]=[];});DB.medecins.forEach(function(med){getActiveSlots().forEach(function(s){var val=getCell(qId,med.id,ds,s.id);if(!val)return;var rules=map[val];if(!rules)return;rules.forEach(function(r){if(r.slots&&r.slots.length&&r.slots.indexOf(s.id)<0)return;if(result[r.col]!==undefined&&result[r.col].indexOf(med.initiales)<0)result[r.col].push(med.initiales);});});});return result;}
+function fmtInits(inits,bg,color){if(!inits||!inits.length)return'';return'<span style="display:flex;flex-wrap:wrap;gap:1px 3px">'+inits.map(function(i){return'<span class="init-badge" style="background:'+(bg||'#e2e8f0')+';color:'+(color||'#1e293b')+'">'+escHtml(i)+'</span>';}).join('')+'</span>';}
+function srvCell(inits,bg,color,extra){return'<td class="cell-srv'+(extra?' '+extra:'')+'">'+(inits&&inits.length?fmtInits(inits,bg,color):'')+'</td>';}
+function shadeColor(hex,amount){try{var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);r=Math.max(0,r-amount);g=Math.max(0,g-amount);b=Math.max(0,b-amount);return'#'+[r,g,b].map(function(x){return x.toString(16).padStart(2,'0');}).join('');}catch(e){return hex;}}
+function hexToRgb(hex){try{return[parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];}catch(e){return[100,100,100];}}
+function renderSrvSegList(){var el=document.getElementById('srv-seg-list');if(!el)return;var segs=getSrvSegs();el.innerHTML=segs.map(function(seg,idx){return'<div class="slot-item"><div style="display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:'+seg.color+'"></span><b>'+escHtml(seg.label)+'</b> <code style="font-size:10px;color:#888">'+escHtml(seg.id)+'</code></div><div style="display:flex;gap:4px"><button class="btn btn-sm" data-idx="'+idx+'" onclick="moveSrvSeg(parseInt(this.dataset.idx),-1)" '+(idx===0?'disabled':'')+'>▲</button><button class="btn btn-sm" data-idx="'+idx+'" onclick="moveSrvSeg(parseInt(this.dataset.idx),1)" '+(idx===segs.length-1?'disabled':'')+'>▼</button><button class="btn btn-warn btn-sm" data-sid="'+escHtml(seg.id)+'" onclick="editSrvSeg(this.dataset.sid)">✏️</button><button class="btn btn-danger btn-sm" data-sid="'+escHtml(seg.id)+'" onclick="removeSrvSeg(this.dataset.sid)">✕</button></div></div>';}).join('');var sel=document.getElementById('cfg-srv-col-seg');if(sel){var prev=sel.value;sel.innerHTML=segs.map(function(s){return'<option value="'+escHtml(s.id)+'">'+escHtml(s.label)+'</option>';}).join('');if(prev)sel.value=prev;}}
+function saveSrvSeg(){if(!DB.srvSegs)DB.srvSegs=JSON.parse(JSON.stringify(DEFAULT_SRV_SEGS));var label=document.getElementById('cfg-srv-seg-label').value.trim(),color=document.getElementById('cfg-srv-seg-color').value,editId=document.getElementById('cfg-srv-seg-edit-id').value;if(!label){alert('Libellé obligatoire');return;}if(editId){var idx=DB.srvSegs.findIndex(function(s){return s.id===editId;});if(idx>=0){DB.srvSegs[idx].label=label;DB.srvSegs[idx].color=color;}}else{DB.srvSegs.push({id:'seg_'+Date.now(),label:label,color:color});}cancelSrvSegEdit();scheduleSave();renderSrvSegList();renderSrvColList();}
+function editSrvSeg(id){var s=getSrvSegs().find(function(x){return x.id===id;});if(!s)return;document.getElementById('cfg-srv-seg-label').value=s.label;document.getElementById('cfg-srv-seg-color').value=s.color;document.getElementById('cfg-srv-seg-edit-id').value=id;document.getElementById('srv-seg-form-title').textContent='Modifier : '+s.label;document.getElementById('btn-cancel-srv-seg').style.display='';}
+function cancelSrvSegEdit(){document.getElementById('cfg-srv-seg-label').value='';document.getElementById('cfg-srv-seg-color').value='#1a5fa8';document.getElementById('cfg-srv-seg-edit-id').value='';document.getElementById('srv-seg-form-title').textContent='Nouveau groupe';document.getElementById('btn-cancel-srv-seg').style.display='none';}
+function removeSrvSeg(id){if(!confirm('Supprimer ce groupe ?'))return;if(!DB.srvSegs)DB.srvSegs=JSON.parse(JSON.stringify(DEFAULT_SRV_SEGS));DB.srvSegs=DB.srvSegs.filter(function(s){return s.id!==id;});scheduleSave();renderSrvSegList();renderSrvColList();renderSrvMap();}
+function moveSrvSeg(idx,dir){if(!DB.srvSegs)DB.srvSegs=JSON.parse(JSON.stringify(DEFAULT_SRV_SEGS));var ni=idx+dir;if(ni<0||ni>=DB.srvSegs.length)return;var tmp=DB.srvSegs[idx];DB.srvSegs[idx]=DB.srvSegs[ni];DB.srvSegs[ni]=tmp;scheduleSave();renderSrvSegList();renderSrvColList();renderSrvMap();}
+function renderSrvColList(){var el=document.getElementById('srv-col-list');if(!el)return;var cols=getSrvCols(),segs=getSrvSegs();el.innerHTML=cols.map(function(col,idx){var seg=segs.find(function(s){return s.id===col.segId;})||{label:'?',color:'#888'};var slotLabels=(col.slots||[]).map(function(sid){var s=getSlots().find(function(x){return x.id===sid;});return s?s.label:sid;}).join(', ');return'<div class="slot-item"><div><b>'+escHtml(col.label)+'</b> <span style="font-size:10px;padding:1px 5px;border-radius:3px;background:'+seg.color+'22;color:'+seg.color+';border:1px solid '+seg.color+'44">'+escHtml(seg.label)+'</span><br><span style="font-size:11px;color:#666">Slots : '+(slotLabels||'<i>aucun</i>')+'</span></div><div style="display:flex;gap:4px"><button class="btn btn-sm" data-idx="'+idx+'" onclick="moveSrvCol(parseInt(this.dataset.idx),-1)" '+(idx===0?'disabled':'')+'>▲</button><button class="btn btn-sm" data-idx="'+idx+'" onclick="moveSrvCol(parseInt(this.dataset.idx),1)" '+(idx===cols.length-1?'disabled':'')+'>▼</button><button class="btn btn-warn btn-sm" data-cid="'+escHtml(col.id)+'" onclick="editSrvCol(this.dataset.cid)">✏️</button><button class="btn btn-danger btn-sm" data-cid="'+escHtml(col.id)+'" onclick="removeSrvCol(this.dataset.cid)">✕</button></div></div>';}).join('');}
+function refreshSrvSlotCheckboxes(){var wrap=document.getElementById('cfg-srv-slots-wrap');if(!wrap)return;var slots=getActiveSlots(),editId=qv('cfg-srv-col-edit-id');var col=editId?getSrvCols().find(function(c){return c.id===editId;}):null;wrap.innerHTML=slots.map(function(s){var chk=col&&col.slots.indexOf(s.id)>=0?'checked':'';return'<label style="min-width:auto;font-weight:400;font-size:12px"><input type="checkbox" class="srv-slot-cb" value="'+escHtml(s.id)+'" '+chk+'> '+escHtml(s.label)+'</label>';}).join('');}
+function saveSrvCol(){if(!DB.srvCols)DB.srvCols=JSON.parse(JSON.stringify(DEFAULT_SRV_COLS));var label=document.getElementById('cfg-srv-col-label').value.trim(),segId=document.getElementById('cfg-srv-col-seg').value,editId=document.getElementById('cfg-srv-col-edit-id').value;if(!label){alert('Libellé obligatoire');return;}var slots=[];document.querySelectorAll('.srv-slot-cb:checked').forEach(function(cb){slots.push(cb.value);});if(editId){var idx=DB.srvCols.findIndex(function(c){return c.id===editId;});if(idx>=0){DB.srvCols[idx].label=label;DB.srvCols[idx].segId=segId;DB.srvCols[idx].slots=slots;}}else{DB.srvCols.push({id:'col_'+Date.now(),label:label,segId:segId,slots:slots});}cancelSrvColEdit();scheduleSave();renderSrvColList();renderSrvMap();}
+function editSrvCol(id){var col=getSrvCols().find(function(x){return x.id===id;});if(!col)return;document.getElementById('cfg-srv-col-label').value=col.label;document.getElementById('cfg-srv-col-seg').value=col.segId;document.getElementById('cfg-srv-col-edit-id').value=id;document.getElementById('srv-col-form-title').textContent='Modifier : '+col.label;document.getElementById('btn-cancel-srv-col').style.display='';refreshSrvSlotCheckboxes();}
+function cancelSrvColEdit(){document.getElementById('cfg-srv-col-label').value='';document.getElementById('cfg-srv-col-edit-id').value='';document.getElementById('srv-col-form-title').textContent='Nouvelle sous-colonne';document.getElementById('btn-cancel-srv-col').style.display='none';refreshSrvSlotCheckboxes();}
+function removeSrvCol(id){if(!confirm('Supprimer cette sous-colonne ?'))return;if(!DB.srvCols)DB.srvCols=JSON.parse(JSON.stringify(DEFAULT_SRV_COLS));DB.srvCols=DB.srvCols.filter(function(c){return c.id!==id;});scheduleSave();renderSrvColList();renderSrvMap();}
+function moveSrvCol(idx,dir){if(!DB.srvCols)DB.srvCols=JSON.parse(JSON.stringify(DEFAULT_SRV_COLS));var ni=idx+dir;if(ni<0||ni>=DB.srvCols.length)return;var tmp=DB.srvCols[idx];DB.srvCols[idx]=DB.srvCols[ni];DB.srvCols[ni]=tmp;scheduleSave();renderSrvColList();renderSrvMap();}
+function renderSrvMap(){var el=document.getElementById('srv-map-wrap');if(!el)return;var cols=getSrvCols(),segs=getSrvSegs(),map=getSrvMap(),acts=(DB.activites||DEFAULT_ACTIVITES).filter(function(a){return !a.archived;});var mapCols=cols.filter(function(c){return c.slots&&c.slots.length>0;});if(!mapCols.length){el.innerHTML='<p style="color:#888;font-size:12px">Aucune sous-colonne avec slots définis.</p>';return;}var html='<table style="border-collapse:collapse;font-size:11px"><thead><tr><th style="background:#2c4a72;color:#fff;padding:4px 8px;border:1px solid #bbb">Activité</th>';var colsBySeq=[];segs.forEach(function(seg){var segCols=mapCols.filter(function(c){return c.segId===seg.id;});if(!segCols.length)return;html+='<th colspan="'+segCols.length+'" style="background:'+seg.color+';color:#fff;padding:3px 6px;border:1px solid #bbb;text-align:center;font-size:10px">'+escHtml(seg.label)+'</th>';segCols.forEach(function(c){colsBySeq.push(c);});});var orphans=mapCols.filter(function(c){return !segs.find(function(s){return s.id===c.segId;});});if(orphans.length){html+='<th colspan="'+orphans.length+'" style="background:#888;color:#fff;padding:3px 6px;border:1px solid #bbb;text-align:center;font-size:10px">Autres</th>';orphans.forEach(function(c){colsBySeq.push(c);});}html+='</tr><tr><th style="background:#374151;color:#fff;padding:3px 6px;border:1px solid #bbb"></th>';colsBySeq.forEach(function(col){html+='<th style="background:#4b5563;color:#fff;padding:2px 4px;border:1px solid #bbb;text-align:center;font-size:10px;min-width:55px;max-width:80px;white-space:normal">'+escHtml(col.label)+'</th>';});html+='</tr></thead><tbody>';acts.forEach(function(a,idx){var rules=map[a.code]||[];html+='<tr style="background:'+(idx%2===0?'#fff':'#f9f9f9')+'"><td style="border:1px solid #bbb;padding:3px 6px;font-weight:600;white-space:nowrap"><span class="badge" style="'+actStyle(a)+'">'+escHtml(a.code)+'</span></td>';colsBySeq.forEach(function(col){var checked=rules.some(function(r){return r.col===col.id;});html+='<td style="border:1px solid #bbb;padding:2px;text-align:center"><input type="checkbox" data-act="'+escHtml(a.code)+'" data-col="'+escHtml(col.id)+'" '+(checked?'checked':'')+' onchange="updateSrvMap(this)"></td>';});html+='</tr>';});html+='</tbody></table>';el.innerHTML=html;}
+function updateSrvMap(cb){if(!DB.srvMap)DB.srvMap=JSON.parse(JSON.stringify(DEFAULT_SRV_MAP));var act=cb.dataset.act,col=cb.dataset.col;if(!DB.srvMap[act])DB.srvMap[act]=[];if(cb.checked){var colDef=getSrvCols().find(function(c){return c.id===col;});if(!DB.srvMap[act].find(function(r){return r.col===col;}))DB.srvMap[act].push({col:col,slots:colDef?colDef.slots.slice():[]});}else{DB.srvMap[act]=DB.srvMap[act].filter(function(r){return r.col!==col;});}}
+function saveSrvMap(){scheduleSave();alert('Mapping sauvegardé.');if(document.getElementById('page-services').classList.contains('active'))renderServices();}
+function resetSrvMap(){if(!confirm('Réinitialiser le mapping par défaut ?'))return;DB.srvMap=JSON.parse(JSON.stringify(DEFAULT_SRV_MAP));scheduleSave();renderSrvMap();}
+function renderServices(){var qId=qv('sel-serv-quad'),moisVal=qv('sel-serv-mois');if(!qId||!moisVal)return;var p=moisVal.split('-'),year=parseInt(p[0]),month=parseInt(p[1]),days=getMoisDays(year,month);var segs=getSrvSegs(),cols=getSrvCols();var colsBySegOrdered=[];segs.forEach(function(seg){cols.filter(function(c){return c.segId===seg.id;}).forEach(function(c){colsBySegOrdered.push({col:c,seg:seg});});});cols.filter(function(c){return !segs.find(function(s){return s.id===c.segId;});}).forEach(function(c){colsBySegOrdered.push({col:c,seg:{id:'?',label:'Autres',color:'#888'}});});var html='<table class="services"><thead><tr><th rowspan="2" style="background:#2c4a72;min-width:30px">Jour</th><th rowspan="2" style="background:#2c4a72;min-width:22px">#</th>';var segSpans={};colsBySegOrdered.forEach(function(x){segSpans[x.seg.id]=(segSpans[x.seg.id]||0)+1;});var seenSegs={};colsBySegOrdered.forEach(function(x){if(!seenSegs[x.seg.id]){seenSegs[x.seg.id]=true;html+='<th colspan="'+segSpans[x.seg.id]+'" style="background:'+x.seg.color+';color:#fff;text-align:center;font-size:10px;font-weight:700">'+escHtml(x.seg.label)+'</th>';}});html+='</tr><tr>';colsBySegOrdered.forEach(function(x){var subColor=shadeColor(x.seg.color,20);html+='<th style="background:'+subColor+';color:#fff;font-size:10px;font-weight:500;white-space:normal;max-width:70px">'+escHtml(x.col.label)+'</th>';});html+='</tr></thead><tbody>';days.forEach(function(d){var ds=dateStr(d),we=isWE(d),fer=isFerie(ds),cl=fer?'ferie':we?'we':'',clTd=cl?' '+cl:'',vs=isVacSco(ds)?'vac-sco':'',clTdV=clTd+(vs?' '+vs:'');var srv=buildServiceRowDyn(qId,ds);var note=getNote(qId,ds)||'';if(fer&&!note)note=getFerieNom(ds);html+='<tr><td class="td-jour'+clTdV+'">'+JOURS[d.getDay()].toUpperCase()+'</td><td class="td-num'+clTdV+'">'+d.getDate()+'</td>';colsBySegOrdered.forEach(function(x){var c=x.col,seg=x.seg;if(c.slots&&c.slots.length===0){html+='<td class="cell-info'+clTdV+'">'+(note?escHtml(note):'')+'</td>';}else{var inits=srv[c.id]||[];html+=srvCell(inits,seg.color+'33',seg.color,clTd);}});html+='</tr>';});html+='</tbody></table><div style="font-size:10px;color:#888;margin-top:6px">Planning en date du : '+new Date().toLocaleDateString('fr-FR')+'</div>';document.getElementById('services-wrap').innerHTML=html;}
+function exportServicesPDF(){var jsPDF=window.jspdf.jsPDF;var qId=qv('sel-serv-quad'),moisVal=qv('sel-serv-mois');if(!qId||!moisVal)return;var p=moisVal.split('-'),year=parseInt(p[0]),month=parseInt(p[1]),days=getMoisDays(year,month);var quad=DB.quadrimestres.find(function(q){return q.id===qId;}),moisLabel=MOIS_LABELS[month-1]+' '+year;var segs=getSrvSegs(),cols=getSrvCols();var colsBySegOrdered=[];segs.forEach(function(seg){cols.filter(function(c){return c.segId===seg.id;}).forEach(function(c){colsBySegOrdered.push({col:c,seg:seg});});});cols.filter(function(c){return !segs.find(function(s){return s.id===c.segId;});}).forEach(function(c){colsBySegOrdered.push({col:c,seg:{id:'?',label:'Autres',color:'#888'}});});var doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});var PW=297,ML=5,MR=5,MT=8,W=PW-ML-MR,y=MT;doc.setFillColor(44,74,114);doc.rect(ML,y,W,7,'F');doc.setTextColor(255,255,255);doc.setFontSize(9);doc.setFont('helvetica','bold');doc.text('PLANNING SERVICES - '+moisLabel.toUpperCase()+(quad?' | '+quad.nom:''),PW/2,y+4.8,{align:'center'});y+=8;doc.setFontSize(6.5);doc.setFont('helvetica','normal');doc.setTextColor(120,120,120);doc.text('Planning en date du : '+new Date().toLocaleDateString('fr-FR'),ML,y+2.5);y+=5;var cJour=8,cNum=5;var dataCols=colsBySegOrdered.filter(function(x){return x.col.slots&&x.col.slots.length>0;});var infoCols=colsBySegOrdered.filter(function(x){return !x.col.slots||x.col.slots.length===0;});var nData=dataCols.length,nInfo=infoCols.length;var minInfoW=nInfo>0?20*nInfo:0;var totalDataW=W-cJour-cNum-minInfoW;
+// Construire les données d'abord pour mesurer le contenu
+var rows=[];days.forEach(function(d){var ds=dateStr(d),we=isWE(d),fer=isFerie(ds),srv=buildServiceRowDyn(qId,ds),note=getNote(qId,ds)||'';if(fer&&!note)note=getFerieNom(ds);var row=[JOURS[d.getDay()].toUpperCase(),d.getDate()];colsBySegOrdered.forEach(function(x){if(!x.col.slots||x.col.slots.length===0){row.push(note);}else{var inits=srv[x.col.id]||[];row.push(inits.join(' '));}});rows.push({data:row,we:we,fer:fer});});
+// Mesurer le poids de chaque colonne sur le CONTENU uniquement (pas le label)
+var rawWidths=colsBySegOrdered.map(function(x,i){
+  if(!x.col.slots||x.col.slots.length===0)return 0;
+  var maxContent=0;
+  rows.forEach(function(r){var cell=String(r.data[i+2]||'');if(cell.length>maxContent)maxContent=cell.length;});
+  return Math.max(maxContent,2); // minimum 2 chars
+});
+// Distribuer proportionnellement dans l'espace total
+var sumRaw=rawWidths.reduce(function(a,b){return a+b;},0);
+var colWidths=rawWidths.map(function(w){return w>0?Math.max(6,(w/sumRaw)*totalDataW):0;});
+var colWPerInfo=nInfo>0?Math.max(20,(W-cJour-cNum-colWidths.reduce(function(a,b){return a+b;},0))/nInfo):0;
+// fs basé sur la moyenne des colonnes larges (>10mm) — pas les petites colonnes
+var dataColWidths=colWidths.filter(function(w){return w>=10;});
+var avgW=dataColWidths.length>0?dataColWidths.reduce(function(a,b){return a+b;},0)/dataColWidths.length:10;
+var fs=avgW<13?5:avgW<18?5.5:6;
+var pad_=fs<5.5?0.5:0.7;var head1=[{content:'',rowSpan:2,styles:{cellWidth:cJour,fillColor:[44,74,114],textColor:255}},{content:'',rowSpan:2,styles:{cellWidth:cNum,fillColor:[44,74,114],textColor:255}}];var seenSegsH={},segSpansH={};colsBySegOrdered.forEach(function(x){segSpansH[x.seg.id]=(segSpansH[x.seg.id]||0)+1;});colsBySegOrdered.forEach(function(x){if(!seenSegsH[x.seg.id]){seenSegsH[x.seg.id]=true;var rgb=hexToRgb(x.seg.color);head1.push({content:x.seg.label,colSpan:segSpansH[x.seg.id],styles:{halign:'center',fillColor:rgb,textColor:255,fontStyle:'bold',fontSize:fs}});}});var head2=[];colsBySegOrdered.forEach(function(x,i){var rgb=hexToRgb(shadeColor(x.seg.color,20));var isInfo=!x.col.slots||x.col.slots.length===0;var cw=isInfo?colWPerInfo:colWidths[i];head2.push({content:x.col.label,styles:{halign:'center',fillColor:rgb,textColor:255,fontSize:Math.max(fs-0.5,3),cellWidth:cw,overflow:'linebreak'}});});var colStyles={0:{cellWidth:cJour,fontStyle:'bold',halign:'left'},1:{cellWidth:cNum,halign:'center',fontStyle:'bold'}};colsBySegOrdered.forEach(function(x,i){var isInfo=!x.col.slots||x.col.slots.length===0;colStyles[i+2]={cellWidth:isInfo?colWPerInfo:colWidths[i],overflow:'linebreak'};});var bodyData=rows.map(function(r){return r.data;});doc.autoTable({head:[head1,head2],body:bodyData,startY:y,margin:{left:ML,right:MR},styles:{fontSize:fs,cellPadding:pad_,valign:'top',halign:'center',lineColor:[190,190,190],lineWidth:0.15,overflow:'linebreak',minCellWidth:4,textColor:[0,0,0]},columnStyles:colStyles,didParseCell:function(data){if(data.section==='body'){var r=rows[data.row.index];if(!r)return;if(r.fer)data.cell.styles.fillColor=[255,228,228];else if(r.we)data.cell.styles.fillColor=[255,248,230];if(data.column.index===0)data.cell.styles.fontStyle='bold';if(data.column.index>=2&&data.cell.raw){data.cell.styles.textColor=[0,0,0];data.cell.styles.fontStyle='bold';}}},theme:'grid'});doc.save('planning_services_'+moisVal+'.pdf');}
+
+function renderArchives(){
+  var el=document.getElementById('archives-wrap');if(!el)return;
+  var archivedQuads=DB.quadrimestres.filter(function(q){return q.archived;}),archivedMeds=DB.medecins.filter(function(m){return m.archived;}),archivedActs=(DB.activites||DEFAULT_ACTIVITES).filter(function(a){return a.archived;}),archivedSlots=getSlots().filter(function(s){return s.archived;}),archivedTables=getGardeTables().filter(function(t){return t.archived;});
+  var now=new Date().toISOString().substring(0,10),html='';
+  html+='<div class="conf-section"><h3>🗓️ Quadrimestres archivés ('+archivedQuads.length+')</h3>';if(!archivedQuads.length)html+='<p style="color:#888;font-size:12px">Aucun.</p>';else archivedQuads.forEach(function(q){html+='<div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid #ddd;border-radius:6px;padding:10px 14px;margin-bottom:8px"><div><div style="font-weight:700">'+escHtml(q.nom)+' <span class="arch-badge">archivé</span></div><div style="font-size:11px;color:#666">📅 '+q.debut+' → '+q.fin+'</div></div><div style="display:flex;gap:6px"><button class="btn btn-success btn-sm" onclick="unarchiveQuad(\''+q.id+'\')">↩ Désarchiver</button><button class="btn btn-danger btn-sm" onclick="removeQuad(\''+q.id+'\')">✕ Supprimer</button></div></div>';});html+='</div>';
+  html+='<div class="conf-section"><h3>👤 Médecins archivés ('+archivedMeds.length+')</h3>';if(!archivedMeds.length)html+='<p style="color:#888;font-size:12px">Aucun.</p>';else{html+='<div class="member-list">';archivedMeds.forEach(function(m){var hasEnded=m.dateFin&&m.dateFin<=now,presence=m.dateDebut||m.dateFin?'<span class="presence-tag'+(hasEnded?' ended':'')+'">'+((m.dateDebut||'?')+' → '+(m.dateFin||'en cours'))+'</span>':'';html+='<div class="member-item archived-item"><div><div style="font-weight:600">'+escHtml(m.nom)+' <span class="arch-badge">archivé</span></div><div style="font-size:11px;color:#666">'+m.initiales+' - '+m.temps+'%</div>'+presence+'</div><button class="btn btn-success btn-sm" onclick="unarchiveMedecin(\''+m.id+'\')">↩ Désarchiver</button></div>';});html+='</div>';}html+='</div>';
+  html+='<div class="conf-section"><h3>🌙 Tableaux Gardes &amp; Astreintes archivés ('+archivedTables.length+')</h3>';if(!archivedTables.length)html+='<p style="color:#888;font-size:12px">Aucun.</p>';else{archivedTables.forEach(function(t){html+='<div class="garde-table-card" style="border-left:4px solid '+t.color+';background:'+t.color+'0d"><div style="display:flex;justify-content:space-between;align-items:center"><div><b>'+escHtml(t.label)+'</b> <span class="arch-badge">archivé</span><br><span style="font-size:11px;color:#666">'+t.cols.length+' colonne(s)</span></div><div style="display:flex;gap:6px"><button class="btn btn-success btn-sm" data-tid="'+escHtml(t.id)+'" onclick="unarchiveGardeTable(this.dataset.tid)">↩ Désarchiver</button><button class="btn btn-danger btn-sm" data-tid="'+escHtml(t.id)+'" onclick="removeGardeTable(this.dataset.tid)">✕ Supprimer</button></div></div></div>';});}html+='</div>';
+  html+='<div class="conf-section"><h3>📋 Slots archivés ('+archivedSlots.length+')</h3>';if(!archivedSlots.length)html+='<p style="color:#888;font-size:12px">Aucun.</p>';else{html+='<div style="display:flex;flex-wrap:wrap;gap:8px">';archivedSlots.forEach(function(s){html+='<div style="display:inline-flex;align-items:center;gap:8px;background:#f9f9f9;border:1px solid #ddd;border-radius:6px;padding:6px 10px"><b>'+escHtml(s.label)+'</b> <code style="font-size:11px">'+escHtml(s.id)+'</code> <span class="arch-badge">archivé</span><button class="btn btn-success btn-sm" data-sid="'+escHtml(s.id)+'" onclick="unarchiveSlot(this.dataset.sid)">↩ Désarchiver</button><button class="btn btn-danger btn-sm" data-sid="'+escHtml(s.id)+'" onclick="removeSlot(this.dataset.sid)">✕</button></div>';});html+='</div>';}html+='</div>';
+  html+='<div class="conf-section"><h3>🏷️ Activités archivées ('+archivedActs.length+')</h3>';if(!archivedActs.length)html+='<p style="color:#888;font-size:12px">Aucune.</p>';else{html+='<div style="display:flex;flex-wrap:wrap;gap:8px">';archivedActs.forEach(function(a){html+='<div style="display:inline-flex;align-items:center;gap:8px;background:#f9f9f9;border:1px solid #ddd;border-radius:6px;padding:6px 10px"><span class="badge" style="'+actStyle(a)+'">'+escHtml(a.code)+'</span> <span style="font-size:12px">'+escHtml(a.label)+'</span> <span class="arch-badge">archivé</span><button class="btn btn-success btn-sm" data-actcode="'+escHtml(a.code)+'" onclick="unarchiveActivite(this.dataset.actcode)">↩ Désarchiver</button><button class="btn btn-danger btn-sm" data-actcode="'+escHtml(a.code)+'" onclick="removeActivite(this.dataset.actcode)">✕</button></div>';});html+='</div>';}html+='</div>';
+  el.innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════
+// CONFIG GÉNÉRALE
+// ══════════════════════════════════════════════════════
+function saveAppName(){var name=document.getElementById('cfg-app-name').value.trim();if(!name)return;DB.appName=name;scheduleSave();updateAppName();}
+function updateAppName(){var name=DB.appName||'Planning Pôle Maternité';var logo=document.getElementById('nav-logo');if(logo)logo.textContent='🏥 '+name;document.title=name;}
+function renderConfig(){var el=document.getElementById('cfg-app-name');if(el)el.value=DB.appName||'Planning Pôle Maternité';renderTabsConfig();renderQuadList();renderMemberList();renderSlotList();renderGardeTablesList();renderGardeColsForSelected();renderDeclColList();renderSrvSegList();renderSrvColList();renderSrvMap();renderVacList();renderFerieList();renderLexique();renderTypeList();refreshGardeSlotSelect();refreshGardeActCheckboxesDyn();refreshDeclSlotSelect();refreshDeclActCheckboxes();refreshSrvSlotCheckboxes();}
+function renderQuadList(){var el=document.getElementById('quad-list');if(!el)return;var active=DB.quadrimestres.filter(function(q){return !q.archived;});if(!active.length){el.innerHTML='<p style="color:#888;font-size:12px;margin-top:6px">Aucun quadrimestre actif.</p>';return;}el.innerHTML=active.map(function(q){return'<div class="member-item" style="margin-top:6px"><div><span style="font-weight:600">'+escHtml(q.nom)+'</span><br><span style="font-size:11px;color:#666">'+q.debut+' → '+q.fin+'</span></div><div style="display:flex;gap:4px"><button class="btn btn-warn btn-sm" data-qid="'+q.id+'" onclick="editQuad(this.dataset.qid)">✏️</button><button class="btn btn-archive btn-sm" data-qid="'+q.id+'" onclick="archiveQuad(this.dataset.qid)">📦</button><button class="btn btn-danger btn-sm" data-qid="'+q.id+'" onclick="removeQuad(this.dataset.qid)">✕</button></div></div>';}).join('');var arch=DB.quadrimestres.filter(function(q){return q.archived;});if(arch.length)el.innerHTML+='<div style="margin-top:8px;font-size:11px;color:#888;font-style:italic">'+arch.length+' archivé(s) — <a href="#" onclick="showPage(\'archives\');return false;" style="color:var(--blue)">voir les archives</a></div>';}
+function editQuad(id){var q=DB.quadrimestres.find(function(x){return x.id===id;});if(!q)return;document.getElementById('cfg-quad-nom').value=q.nom;document.getElementById('cfg-quad-debut').value=q.debut;document.getElementById('cfg-quad-fin').value=q.fin;document.getElementById('cfg-quad-edit-id').value=id;document.getElementById('quad-form-title').textContent='Modifier : '+q.nom;document.getElementById('btn-cancel-quad').style.display='';}
+function cancelQuadEdit(){document.getElementById('cfg-quad-nom').value='';document.getElementById('cfg-quad-debut').value='';document.getElementById('cfg-quad-fin').value='';document.getElementById('cfg-quad-edit-id').value='';document.getElementById('quad-form-title').textContent='Nouveau quadrimestre';document.getElementById('btn-cancel-quad').style.display='none';}
+function saveQuadrimestre(){var nom=document.getElementById('cfg-quad-nom').value.trim(),debut=document.getElementById('cfg-quad-debut').value,fin=document.getElementById('cfg-quad-fin').value,editId=document.getElementById('cfg-quad-edit-id').value;if(!nom||!debut||!fin){alert('Remplissez tous les champs');return;}if(editId){var idx=DB.quadrimestres.findIndex(function(q){return q.id===editId;});if(idx>=0){DB.quadrimestres[idx].nom=nom;DB.quadrimestres[idx].debut=debut;DB.quadrimestres[idx].fin=fin;}}else{var id='q'+Date.now();DB.quadrimestres.push({id:id,nom:nom,debut:debut,fin:fin,archived:false});var dS=parseDate(debut),dE=parseDate(fin),years={};for(var y=dS.getFullYear();y<=dE.getFullYear();y++)years[y]=true;Object.keys(years).forEach(function(y){getJoursFeriesFrance(parseInt(y)).forEach(function(f){var fd=parseDate(f.date);if(fd>=dS&&fd<=dE&&!DB.feries.find(function(x){return x.date===f.date;}))DB.feries.push(f);});});}cancelQuadEdit();scheduleSave();renderConfig();populateAllSelects();}
+function removeQuad(id){if(!confirm('Supprimer définitivement ?'))return;DB.quadrimestres=DB.quadrimestres.filter(function(q){return q.id!==id;});scheduleSave();renderConfig();populateAllSelects();renderArchives();}
+function renderMemberList(){var el=document.getElementById('member-list');if(!el)return;var active=DB.medecins.filter(function(m){return !m.archived;}),archived=DB.medecins.filter(function(m){return m.archived;}),now=new Date().toISOString().substring(0,10);el.innerHTML=active.map(function(m){var hasEnded=m.dateFin&&m.dateFin<=now,presTag=m.dateDebut||m.dateFin?'<span class="presence-tag'+(hasEnded?' ended':'')+'">📅 '+(m.dateDebut||'?')+' → '+(m.dateFin||'...')+'</span>':'';return'<div class="member-item"><div><span style="font-weight:600">'+escHtml(m.nom)+'</span><br><span style="font-size:11px;color:#666">'+m.initiales+' - '+m.temps+'%'+(m.raccourci?' | '+m.raccourci:'')+(m.telPerso?' | '+m.telPerso:'')+'</span>'+presTag+'</div><div style="display:flex;gap:4px;flex-wrap:wrap"><button class="btn btn-warn btn-sm" onclick="editMedecin(\''+m.id+'\')">Modifier</button><button class="btn btn-archive btn-sm" onclick="archiveMedecin(\''+m.id+'\')">📦</button><button class="btn btn-danger btn-sm" onclick="removeMed(\''+m.id+'\')">✕</button></div></div>';}).join('');if(archived.length)el.innerHTML+='<div style="margin-top:8px;font-size:11px;color:#888;font-style:italic;grid-column:1/-1">'+archived.length+' archivé(s) — <a href="#" onclick="showPage(\'archives\');return false;" style="color:var(--blue)">voir les archives</a></div>';}
+function medNomComplet(m){return((m.prenom?m.prenom+' ':'')+m.nomFamille).trim()||m.nom||'';}
+function medNomCourt(m){return m.nomFamille||(m.nom||'').split(/\s+/).pop()||'';}
+function editMedecin(id){var m=DB.medecins.find(function(x){return x.id===id;});if(!m)return;document.getElementById('cfg-med-prenom').value=m.prenom||'';document.getElementById('cfg-med-nomfamille').value=m.nomFamille||'';document.getElementById('cfg-med-init').value=m.initiales;document.getElementById('cfg-med-raccourci').value=m.raccourci||'';document.getElementById('cfg-med-tel-pro').value=m.telPro||'';document.getElementById('cfg-med-tel-perso').value=m.telPerso||'';document.getElementById('cfg-med-temps').value=m.temps;document.getElementById('cfg-med-debut').value=m.dateDebut||'';document.getElementById('cfg-med-fin').value=m.dateFin||'';document.getElementById('cfg-med-edit-id').value=id;document.getElementById('med-form-title').textContent='Modifier : '+medNomComplet(m);document.getElementById('btn-cancel-med').style.display='';}
+function cancelMedEdit(){['cfg-med-prenom','cfg-med-nomfamille','cfg-med-init','cfg-med-raccourci','cfg-med-tel-pro','cfg-med-tel-perso','cfg-med-debut','cfg-med-fin','cfg-med-edit-id'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('cfg-med-temps').value=100;document.getElementById('med-form-title').textContent='Nouveau médecin';document.getElementById('btn-cancel-med').style.display='none';}
+function saveMedecin(){var prenom=document.getElementById('cfg-med-prenom').value.trim(),nomFamille=document.getElementById('cfg-med-nomfamille').value.trim().toUpperCase(),init=document.getElementById('cfg-med-init').value.trim().toUpperCase(),raccourci=document.getElementById('cfg-med-raccourci').value.trim(),telPro=document.getElementById('cfg-med-tel-pro').value.trim(),telPerso=document.getElementById('cfg-med-tel-perso').value.trim(),temps=parseFloat(document.getElementById('cfg-med-temps').value)||100,dateDebut=document.getElementById('cfg-med-debut').value||'',dateFin=document.getElementById('cfg-med-fin').value||'',editId=document.getElementById('cfg-med-edit-id').value;if(!nomFamille||!init){alert('Remplissez nom de famille et initiales');return;}var nomComplet=((prenom?prenom+' ':'')+nomFamille).trim();if(editId){var idx=DB.medecins.findIndex(function(m){return m.id===editId;});if(idx>=0)DB.medecins[idx]=Object.assign({},DB.medecins[idx],{nom:nomComplet,prenom:prenom,nomFamille:nomFamille,initiales:init,raccourci:raccourci,telPro:telPro,telPerso:telPerso,temps:temps,dateDebut:dateDebut,dateFin:dateFin});}else{if(DB.medecins.find(function(m){return m.id===init;})){alert('Ces initiales existent déjà');return;}DB.medecins.push({id:init,nom:nomComplet,prenom:prenom,nomFamille:nomFamille,initiales:init,raccourci:raccourci,telPro:telPro,telPerso:telPerso,temps:temps,dateDebut:dateDebut,dateFin:dateFin,archived:false});}cancelMedEdit();scheduleSave();renderMemberList();populateMedecinSelect();}
+function removeMed(id){if(!confirm('Supprimer définitivement ?'))return;DB.medecins=DB.medecins.filter(function(m){return m.id!==id;});scheduleSave();renderConfig();populateMedecinSelect();}
+function renderSlotList(){var el=document.getElementById('slot-list');if(!el)return;var active=getSlots().filter(function(s){return !s.archived;}),arcCount=getSlots().filter(function(s){return s.archived;}).length;var now=new Date().toISOString().substring(0,10);var jourL={'sem':'Semaine','we':'WE/Fériés','tous':'Tous les jours'};el.innerHTML=active.map(function(s,idx){var inactive=!isSlotActive(s,now);var periTag=s.dateDebut||s.dateFin?'<span class="presence-tag'+(inactive?' ended':'')+'">📅 '+(s.dateDebut||'?')+' → '+(s.dateFin||'...')+'</span>':'';return'<div class="slot-item'+(inactive?' archived-item':'')+'"><div><b>'+escHtml(s.label)+'</b> <span style="font-size:10px;color:#888">('+escHtml(s.court)+')</span>'+(inactive?' <span class="arch-badge">inactif</span>':'')+'<br><span style="font-size:11px;color:#666">ID: <code>'+escHtml(s.id)+'</code> — '+(jourL[s.jours]||s.jours)+'</span>'+periTag+'</div><div style="display:flex;gap:4px;flex-wrap:wrap"><button class="btn btn-sm" data-idx="'+idx+'" onclick="moveSlot(parseInt(this.dataset.idx),-1)" '+(idx===0?'disabled':'')+'>▲</button><button class="btn btn-sm" data-idx="'+idx+'" onclick="moveSlot(parseInt(this.dataset.idx),1)" '+(idx===active.length-1?'disabled':'')+'>▼</button><button class="btn btn-warn btn-sm" data-sid="'+escHtml(s.id)+'" onclick="editSlot(this.dataset.sid)">✏️</button><button class="btn btn-archive btn-sm" data-sid="'+escHtml(s.id)+'" onclick="archiveSlot(this.dataset.sid)">📦</button><button class="btn btn-danger btn-sm" data-sid="'+escHtml(s.id)+'" onclick="removeSlot(this.dataset.sid)">✕</button></div></div>';}).join('');if(arcCount)el.innerHTML+='<div style="margin-top:6px;font-size:11px;color:#888;font-style:italic">'+arcCount+' archivé(s) — <a href="#" onclick="showPage(\'archives\');return false;" style="color:var(--blue)">voir les archives</a></div>';refreshGardeSlotSelect();refreshSrvSlotCheckboxes();}
+function saveSlot(){if(!DB.slots)DB.slots=JSON.parse(JSON.stringify(DEFAULT_SLOTS));var id=document.getElementById('cfg-slot-id').value.trim(),label=document.getElementById('cfg-slot-label').value.trim(),court=document.getElementById('cfg-slot-court').value.trim(),jours=document.getElementById('cfg-slot-jours').value,debut=document.getElementById('cfg-slot-debut').value||'',fin=document.getElementById('cfg-slot-fin').value||'',editId=document.getElementById('cfg-slot-edit-id').value;if(!id||!label){alert('Identifiant et libellé obligatoires');return;}if(editId){var idx=DB.slots.findIndex(function(s){return s.id===editId;});if(idx>=0){if(id!==editId&&DB.slots.find(function(s){return s.id===id;})){alert('Identifiant déjà utilisé');return;}if(id!==editId&&!confirm('⚠️ Changer l\'identifiant efface les données dans ce slot. Continuer ?'))return;DB.slots[idx]={id:id,label:label,court:court||id,jours:jours,dateDebut:debut,dateFin:fin,archived:false};}}else{if(DB.slots.find(function(s){return s.id===id;})){alert('Cet identifiant existe déjà');return;}DB.slots.push({id:id,label:label,court:court||id,jours:jours,dateDebut:debut,dateFin:fin,archived:false});}cancelSlotEdit();scheduleSave();renderSlotList();}
+function editSlot(id){var s=getSlots().find(function(x){return x.id===id;});if(!s)return;document.getElementById('cfg-slot-id').value=s.id;document.getElementById('cfg-slot-label').value=s.label;document.getElementById('cfg-slot-court').value=s.court||s.id;document.getElementById('cfg-slot-jours').value=s.jours||'tous';document.getElementById('cfg-slot-debut').value=s.dateDebut||'';document.getElementById('cfg-slot-fin').value=s.dateFin||'';document.getElementById('cfg-slot-edit-id').value=id;document.getElementById('slot-form-title').textContent='Modifier : '+s.label;document.getElementById('btn-cancel-slot').style.display='';}
+function cancelSlotEdit(){['cfg-slot-id','cfg-slot-label','cfg-slot-court','cfg-slot-debut','cfg-slot-fin','cfg-slot-edit-id'].forEach(function(i){document.getElementById(i).value='';});document.getElementById('cfg-slot-jours').value='sem';document.getElementById('slot-form-title').textContent='Nouveau slot';document.getElementById('btn-cancel-slot').style.display='none';}
+function archiveSlot(id){var s=getSlots().find(function(x){return x.id===id;});if(!s||!confirm('Archiver "'+s.label+'" ?'))return;s.archived=true;scheduleSave();renderSlotList();}
+function unarchiveSlot(id){var s=getSlots().find(function(x){return x.id===id;});if(!s)return;s.archived=false;scheduleSave();renderSlotList();renderArchives();}
+function removeSlot(id){if(!confirm('Supprimer définitivement ce slot ?'))return;DB.slots=DB.slots.filter(function(s){return s.id!==id;});scheduleSave();renderSlotList();}
+function moveSlot(idx,dir){var active=DB.slots.filter(function(s){return !s.archived;}),ni=idx+dir;if(ni<0||ni>=active.length)return;var ri=DB.slots.indexOf(active[idx]),rni=DB.slots.indexOf(active[ni]);var tmp=DB.slots[ri];DB.slots[ri]=DB.slots[rni];DB.slots[rni]=tmp;scheduleSave();renderSlotList();}
+function renderVacList(){var el=document.getElementById('vac-list');if(!el)return;var vacs=getVacances();if(!vacs.length){el.innerHTML='<p style="color:#888">Aucune période.</p>';return;}el.innerHTML=vacs.map(function(v,i){return'<span style="display:inline-flex;align-items:center;gap:5px;margin:3px 5px 3px 0;background:#ede9fe;padding:2px 10px;border-radius:4px;font-size:12px;color:#5b21b6"><b>'+escHtml(v.label)+'</b> : '+v.debut+' → '+v.fin+'<button data-idx="'+i+'" onclick="removeVacance(parseInt(this.dataset.idx))" style="border:none;background:none;cursor:pointer;color:#7c3aed;font-size:13px">✕</button></span>';}).join('');}
+function addVacance(){var label=document.getElementById('cfg-vac-label').value.trim(),debut=document.getElementById('cfg-vac-debut').value,fin=document.getElementById('cfg-vac-fin').value;if(!label||!debut||!fin){alert('Remplissez tous les champs');return;}if(!DB.vacances)DB.vacances=JSON.parse(JSON.stringify(DEFAULT_VACANCES));DB.vacances.push({label:label,debut:debut,fin:fin});DB.vacances.sort(function(a,b){return a.debut.localeCompare(b.debut);});scheduleSave();renderVacList();}
+function removeVacance(idx){if(!DB.vacances)DB.vacances=JSON.parse(JSON.stringify(DEFAULT_VACANCES));DB.vacances.splice(idx,1);scheduleSave();renderVacList();}
+function renderFerieList(){var el=document.getElementById('ferie-list');if(!el)return;el.innerHTML=DB.feries.sort(function(a,b){return a.date.localeCompare(b.date);}).map(function(f){return'<span style="display:inline-flex;align-items:center;gap:5px;margin:3px 5px 3px 0;background:#fee2e2;padding:2px 8px;border-radius:3px;font-size:12px">'+f.date+' - '+escHtml(f.nom)+'<button onclick="removeFerie(\''+f.date+'\')" style="border:none;background:none;cursor:pointer;color:#b91c1c">x</button></span>';}).join('');}
+function addFerie(){var date=document.getElementById('cfg-ferie-date').value,nom=document.getElementById('cfg-ferie-nom').value.trim();if(!date||!nom)return;DB.feries=DB.feries.filter(function(f){return f.date!==date;});DB.feries.push({date:date,nom:nom});scheduleSave();renderFerieList();}
+function removeFerie(date){DB.feries=DB.feries.filter(function(f){return f.date!==date;});scheduleSave();renderFerieList();}
+var ICON_BANK=[{cat:'Médical & Clinique',icons:['🏥','🏨','🩺','💊','🩹','🩻','🧬','🔬','💉','🩸','🫀','🧪','🫁','🧠','👁️','🦷','🦴']},{cat:'Gardes & Nuit',icons:['🌙','⭐','🌛','🌜','🌚','🔦','🌃','⚡','⏰','🔴','🟠','🕐']},{cat:'HAD & Domicile',icons:['🚑','🏠','🛏️','🚗','🏡','📍','🗺️','🛵']},{cat:'Administratif',icons:['📋','📄','📝','📁','🗂️','💼','🖥️','📊','📈','📎','🖊️','📌','📬','🗓️','📆','💻']},{cat:'Formation',icons:['🎓','📚','📖','🏫','🎯','✏️','📐','🏆','🔭']},{cat:'Absences & Congés',icons:['📅','🏖️','🌴','✈️','🏝️','🌅','🎿','🌊','😴','🧳']},{cat:'Divers',icons:['⚙️','✅','❌','⚠️','🔔','🚫','💡','🔑','👤','👥','🌐','🔄','🟢','🔵','🟣','⚪','💛']}];
+function buildIconPickerContent(){var el=document.getElementById('icon-picker-content');if(!el)return;var current=document.getElementById('cfg-type-icon').value||'';var html='';ICON_BANK.forEach(function(cat){html+='<div class="ip-cat-label">'+escHtml(cat.cat)+'</div><div class="ip-grid">';cat.icons.forEach(function(ico){html+='<span class="ip-icon'+(ico===current?' selected':'')+'" onclick="selectTypeIcon(\''+ico+'\')" title="'+ico+'">'+ico+'</span>';});html+='</div>';});el.innerHTML=html;}
+function toggleIconPicker(e){e.stopPropagation();var popup=document.getElementById('icon-picker-popup');if(popup.classList.contains('open')){popup.classList.remove('open');document.removeEventListener('click',closeIconPickerOutside,true);}else{buildIconPickerContent();popup.classList.add('open');setTimeout(function(){document.addEventListener('click',closeIconPickerOutside,true);},10);}}
+function closeIconPickerOutside(e){var wrap=document.getElementById('icon-picker-wrap');if(wrap&&!wrap.contains(e.target)){document.getElementById('icon-picker-popup').classList.remove('open');document.removeEventListener('click',closeIconPickerOutside,true);}}
+function selectTypeIcon(ico){document.getElementById('cfg-type-icon').value=ico;document.getElementById('cfg-type-icon-btn').textContent=ico;document.getElementById('icon-picker-popup').classList.remove('open');document.removeEventListener('click',closeIconPickerOutside,true);}
+function syncIconBtn(ico){var btn=document.getElementById('cfg-type-icon-btn');if(btn)btn.textContent=ico||'📋';}
+function getTypes(){return DB.types||DEFAULT_TYPES;}
+function getTypeLabelById(id){var t=getTypes().find(function(x){return x.id===id;});return t?t.label:id;}
+function renderTypeList(){var el=document.getElementById('type-list');if(!el)return;var types=getTypes();el.innerHTML=types.map(function(t){return'<span style="display:inline-flex;align-items:center;gap:5px;margin:3px 5px 3px 0;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:600;background:'+t.color+'1a;border:1px solid '+t.color+'"><span style="font-size:14px">'+(t.icon||'📋')+'</span> '+escHtml(t.label)+'<button onclick="editType(\''+t.id+'\')" style="border:none;background:none;cursor:pointer;font-size:11px;padding:0 2px">✏️</button><button onclick="removeType(\''+t.id+'\')" style="border:none;background:none;cursor:pointer;color:#b91c1c;font-size:12px;padding:0 2px">✕</button></span>';}).join('');var sel=document.getElementById('cfg-act-type');if(sel){var prev=sel.value;sel.innerHTML=types.map(function(t){return'<option value="'+t.id+'">'+escHtml(t.label)+'</option>';}).join('');if(prev)sel.value=prev;}}
+function saveType(){var id=document.getElementById('cfg-type-id').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'_'),label=document.getElementById('cfg-type-label').value.trim(),icon=document.getElementById('cfg-type-icon').value.trim()||'📋',color=document.getElementById('cfg-type-color').value,editId=document.getElementById('cfg-type-edit-id').value;if(!label)return;if(!DB.types)DB.types=JSON.parse(JSON.stringify(DEFAULT_TYPES));if(editId){var idx=DB.types.findIndex(function(t){return t.id===editId;});if(idx>=0)DB.types[idx]={id:editId,label:label,icon:icon,color:color};}else{if(!id)return;if(DB.types.find(function(t){return t.id===id;})){alert('Identifiant déjà utilisé');return;}DB.types.push({id:id,label:label,icon:icon,color:color});}cancelTypeEdit();scheduleSave();renderLexique();}
+function editType(id){var t=getTypes().find(function(x){return x.id===id;});if(!t)return;document.getElementById('cfg-type-id').value=t.id;document.getElementById('cfg-type-label').value=t.label;document.getElementById('cfg-type-icon').value=t.icon||'';syncIconBtn(t.icon||'📋');document.getElementById('cfg-type-color').value=t.color;document.getElementById('cfg-type-edit-id').value=id;document.getElementById('type-form-title').textContent='Modifier : '+t.label;document.getElementById('btn-cancel-type').style.display='';}
+function cancelTypeEdit(){document.getElementById('cfg-type-id').value='';document.getElementById('cfg-type-label').value='';document.getElementById('cfg-type-icon').value='';syncIconBtn('📋');document.getElementById('cfg-type-color').value='#1a5fa8';document.getElementById('cfg-type-edit-id').value='';document.getElementById('type-form-title').textContent='Nouveau type';document.getElementById('btn-cancel-type').style.display='none';}
+function removeType(id){if(!confirm('Supprimer ce type ?'))return;if(!DB.types)DB.types=JSON.parse(JSON.stringify(DEFAULT_TYPES));DB.types=DB.types.filter(function(t){return t.id!==id;});scheduleSave();renderLexique();}
+function renderLexique(){renderTypeList();var el=document.getElementById('lexique-table');if(!el)return;var acts=DB.activites||DEFAULT_ACTIVITES,active=acts.filter(function(a){return !a.archived;}),archivedCount=acts.filter(function(a){return a.archived;}).length;el.innerHTML=active.map(function(a,idx){var swatch='<span style="display:inline-block;width:24px;height:14px;border-radius:3px;background:'+a.bg+';border:1px solid '+a.color+';vertical-align:middle"></span>';var dr=a.dateDebut||a.dateFin?'<span class="presence-tag">'+((a.dateDebut||'?')+'→'+(a.dateFin||'...'))+'</span>':'<span style="color:#aaa;font-style:italic">Permanente</span>';return'<tr><td style="border:1px solid #bbb;padding:2px 4px;text-align:center"><button class="btn btn-sm" style="padding:1px 5px" onclick="moveAct('+idx+',-1)" '+(idx===0?'disabled':'')+'>▲</button><button class="btn btn-sm" style="padding:1px 5px" onclick="moveAct('+idx+',1)" '+(idx===active.length-1?'disabled':'')+'>▼</button></td><td style="border:1px solid #bbb;padding:3px 8px;text-align:center">'+swatch+'</td><td style="border:1px solid #bbb;padding:3px 8px"><span class="badge" style="'+actStyle(a)+'">'+escHtml(a.code)+'</span></td><td style="border:1px solid #bbb;padding:3px 8px">'+escHtml(a.label)+'</td><td style="border:1px solid #bbb;padding:3px 8px;text-align:center;font-weight:600">'+a.coeff+'</td><td style="border:1px solid #bbb;padding:3px 8px;color:#555">'+escHtml(getTypeLabelById(a.type))+'</td><td style="border:1px solid #bbb;padding:3px 8px;font-size:11px">'+dr+'</td><td style="border:1px solid #bbb;padding:3px 6px;white-space:nowrap"><button class="btn btn-warn btn-sm" style="margin-right:2px" data-actcode="'+escHtml(a.code)+'" onclick="editActivite(this.dataset.actcode)">✏️</button><button class="btn btn-archive btn-sm" style="margin-right:2px" data-actcode="'+escHtml(a.code)+'" onclick="archiveActivite(this.dataset.actcode)">📦</button><button class="btn btn-danger btn-sm" data-actcode="'+escHtml(a.code)+'" onclick="removeActivite(this.dataset.actcode)">✕</button></td></tr>';}).join('');if(archivedCount)el.innerHTML+='<tr><td colspan="8" style="border:1px solid #bbb;padding:4px 8px;background:#f9f9f9;font-size:11px;color:#888;font-style:italic">'+archivedCount+' archivée(s) — <a href="#" onclick="showPage(\'archives\');return false;" style="color:var(--blue)">voir les archives</a></td></tr>';}
+function moveAct(idx,dir){if(!DB.activites)DB.activites=JSON.parse(JSON.stringify(DEFAULT_ACTIVITES));var active=DB.activites.filter(function(a){return !a.archived;}),ni=idx+dir;if(ni<0||ni>=active.length)return;var ri=DB.activites.indexOf(active[idx]),rni=DB.activites.indexOf(active[ni]);if(ri<0||rni<0)return;var tmp=DB.activites[ri];DB.activites[ri]=DB.activites[rni];DB.activites[rni]=tmp;rebuildActMap();scheduleSave();renderLexique();}
+function editActivite(code){var acts=DB.activites||DEFAULT_ACTIVITES,a=acts.find(function(x){return x.code===code;});if(!a)return;document.getElementById('cfg-act-code').value=a.code;document.getElementById('cfg-act-label').value=a.label;document.getElementById('cfg-act-coeff').value=a.coeff;document.getElementById('cfg-act-type').value=a.type;document.getElementById('cfg-act-bg').value=a.bg;document.getElementById('cfg-act-color').value=a.color;document.getElementById('cfg-act-debut').value=a.dateDebut||'';document.getElementById('cfg-act-fin').value=a.dateFin||'';document.getElementById('cfg-act-edit-code').value=code;document.getElementById('act-form-title').textContent='Modifier : '+code;document.getElementById('btn-cancel-act').style.display='';}
+function cancelActEdit(){document.getElementById('cfg-act-code').value='';document.getElementById('cfg-act-label').value='';document.getElementById('cfg-act-coeff').value=1;document.getElementById('cfg-act-bg').value='#dbeafe';document.getElementById('cfg-act-color').value='#1e3a8a';document.getElementById('cfg-act-debut').value='';document.getElementById('cfg-act-fin').value='';document.getElementById('cfg-act-edit-code').value='';document.getElementById('act-form-title').textContent='Nouvelle activité';document.getElementById('btn-cancel-act').style.display='none';}
+function saveActivite(){if(!DB.activites)DB.activites=JSON.parse(JSON.stringify(DEFAULT_ACTIVITES));var code=document.getElementById('cfg-act-code').value.trim(),label=document.getElementById('cfg-act-label').value.trim(),coeff=parseFloat(document.getElementById('cfg-act-coeff').value)||0,type=document.getElementById('cfg-act-type').value,bg=document.getElementById('cfg-act-bg').value,color=document.getElementById('cfg-act-color').value,dateDebut=document.getElementById('cfg-act-debut').value||'',dateFin=document.getElementById('cfg-act-fin').value||'',editCode=document.getElementById('cfg-act-edit-code').value;if(!code||!label)return;if(editCode){var idx=DB.activites.findIndex(function(a){return a.code===editCode;});if(idx>=0)DB.activites[idx]=Object.assign({},DB.activites[idx],{code:code,label:label,coeff:coeff,type:type,bg:bg,color:color,dateDebut:dateDebut,dateFin:dateFin});}else{if(DB.activites.find(function(a){return a.code===code;})){alert('Ce code existe déjà');return;}DB.activites.push({code:code,label:label,coeff:coeff,type:type,bg:bg,color:color,dateDebut:dateDebut,dateFin:dateFin,archived:false});}rebuildActMap();cancelActEdit();scheduleSave();renderLexique();}
+function removeActivite(code){if(!confirm('Supprimer "'+code+'" ?'))return;if(!DB.activites)DB.activites=JSON.parse(JSON.stringify(DEFAULT_ACTIVITES));DB.activites=DB.activites.filter(function(a){return a.code!==code;});rebuildActMap();scheduleSave();renderLexique();}
+
+// ══════════════════════════════════════════════════════
+// EXPORTS CSV
+// ══════════════════════════════════════════════════════
+function downloadCSV(rows,filename){var sep=';',csv=rows.map(function(r){return r.map(function(c){var s=String(c||'');return(s.indexOf(sep)>=0||s.indexOf('"')>=0||s.indexOf('\n')>=0)?'"'+s.replace(/"/g,'""')+'"':s;}).join(sep);}).join('\r\n');var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();}
+function exportPlanning(){var qId=qv('sel-quadrimestre'),moisVal=qv('sel-mois');if(!qId||!moisVal)return;var p=moisVal.split('-'),year=parseInt(p[0]),month=parseInt(p[1]),days=getMoisDays(year,month);var per=getPeriodFromMois(moisVal),meds=getMedsForPeriod(per.debut,per.fin);var header=['Medecin'];days.forEach(function(d){var ds=dateStr(d);getSlotsForDay(d,ds).forEach(function(s){header.push(JOURS[d.getDay()]+' '+d.getDate()+' '+s.court);});});header.push('VAC');var rows=[['Planning '+MOIS_LABELS[month-1]+' '+year],header];meds.forEach(function(med){var row=[med.nom],vac=0;days.forEach(function(d){var ds=dateStr(d);getSlotsForDay(d,ds).forEach(function(s){var v=getCell(qId,med.id,ds,s.id)||'';row.push(v);if(v&&ACT_MAP[v])vac+=ACT_MAP[v].coeff;});});row.push(vac.toFixed(2));rows.push(row);});downloadCSV(rows,'planning_'+moisVal+'.csv');}
+function exportGarde(){var qId=qv('sel-garde-quad'),moisVal=qv('sel-garde-mois'),tid=qv('sel-garde-table');if(!qId||!moisVal||!tid)return;var gt=getGardeTableById(tid);if(!gt)return;var p=moisVal.split('-'),year=parseInt(p[0]),month=parseInt(p[1]);var cols=gt.cols||[];var header=['Jour','Date'].concat(cols.map(function(c){return c.label;}));var rows=[[gt.label],header];getMoisDays(year,month).forEach(function(d){var ds=dateStr(d),sp=isSpecialDay(d,ds);var row=[JOURS[d.getDay()],d.getDate()];cols.forEach(function(col){row.push(resolveGardeCol(qId,ds,col,sp)||'');});rows.push(row);});downloadCSV(rows,gt.label.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+moisVal+'.csv');}
+function exportDeclaratif(){var qId=qv('sel-decl-quad'),moisVal=qv('sel-decl-mois');if(!qId||!moisVal)return;var p=moisVal.split('-'),year=parseInt(p[0]),month=parseInt(p[1]);var tables=getActiveGardeTables();var allCols=[];tables.forEach(function(gt){(gt.cols||[]).filter(function(c){return c.jours!=='we';}).forEach(function(col){allCols.push({gt:gt,col:col});});});var header=['Date','Jour'].concat(allCols.map(function(x){return x.gt.label+' — '+x.col.label;})).concat(['Observations']);var rows=[['Declaratif RH'],header];getMoisDays(year,month).forEach(function(d){var ds=dateStr(d),we=isWE(d),fer=isFerie(ds),sp=we||fer;var row=[ds,JOURS[d.getDay()]];allCols.forEach(function(x){row.push(resolveGardeCol(qId,ds,x.col,sp)||'');});row.push(fer?getFerieNom(ds):'');rows.push(row);});downloadCSV(rows,'declaratif_rh_'+moisVal+'.csv');}
+function exportIndividuel(){var qId=qv('sel-indiv-quad'),moisVal=qv('sel-indiv-mois'),medVal=qv('sel-indiv-medecin');var meds=getMedsForIndiv(qId,moisVal,medVal);var allSlots=getActiveSlots();var rows=[['Planning individuel']];meds.forEach(function(med){rows.push([med.nom]);rows.push(['Date','Jour'].concat(allSlots.map(function(s){return s.label;})).concat(['VAC']));getMoisInQuad(qId).forEach(function(m){rows.push([m.label]);getMoisDays(m.year,m.month).forEach(function(d){var ds=dateStr(d),vac=0;var cells=allSlots.map(function(s){var v=getCell(qId,med.id,ds,s.id)||'';if(v&&ACT_MAP[v])vac+=ACT_MAP[v].coeff;return v;});rows.push([ds,JOURS[d.getDay()]].concat(cells).concat([vac||'']));});});rows.push([]);});downloadCSV(rows,'planning_individuel.csv');}
+function exportStats(){var qId=qv('sel-stats-quad'),moisVal=qv('sel-stats-mois');if(!qId)return;var moisList=getMoisInQuad(qId);if(moisVal&&moisVal!=='all')moisList=moisList.filter(function(m){return m.year+'-'+String(m.month).padStart(2,'0')===moisVal;});var q=DB.quadrimestres.find(function(x){return x.id===qId;}),pDebut,pFin;if(moisVal&&moisVal!=='all'){var per=getPeriodFromMois(moisVal);pDebut=per.debut;pFin=per.fin;}else{pDebut=q?q.debut:'';pFin=q?q.fin:'';}var meds=getMedsForPeriod(pDebut,pFin);var rows=[['Statistiques planning'],['Medecin','Temps (%)','VAC theorique','VAC','Mater','SDN','HAD','HAD J','Consult','CEH','ADM','CA','RTT','AT']];meds.forEach(function(med){var counts={};ACTIVITES.forEach(function(a){counts[a.code]=0;});var vac=0;moisList.forEach(function(m){getMoisDays(m.year,m.month).forEach(function(d){var ds=dateStr(d);getSlotsForDay(d,ds).forEach(function(s){var v=getCell(qId,med.id,ds,s.id);if(v){counts[v]=(counts[v]||0)+1;var act=ACT_MAP[v];if(act)vac+=act.coeff;}});});});rows.push([med.nom,med.temps+'%',(140*(med.temps/100)).toFixed(1),vac.toFixed(2),counts['Mater']||0,counts['SDN']||0,counts['HAD']||0,counts['HAD J']||0,counts['Consult']||0,counts['CEH']||0,counts['ADM']||0,counts['CA']||0,counts['RTT']||0,counts['AT']||0]);});downloadCSV(rows,'stats_'+(moisVal&&moisVal!=='all'?moisVal:'quadrimestre')+'.csv');}
+function exportIndividuelPDF(congesOnly){var jsPDF=window.jspdf.jsPDF;var qId=qv('sel-indiv-quad'),moisVal=qv('sel-indiv-mois'),medVal=qv('sel-indiv-medecin');if(!qId)return;var moisList=getMoisInQuad(qId);if(moisVal&&moisVal!=='all')moisList=moisList.filter(function(m){return m.year+'-'+String(m.month).padStart(2,'0')===moisVal;});var meds=getMedsForIndiv(qId,moisVal,medVal);if(!meds.length||!moisList.length){alert('Aucune donnée à exporter');return;}var allSlots=getActiveSlots();var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});var PW=210,PH=297,ML=10,MR=10,MT=12,MB=10,W=PW-ML-MR,firstPage=true;var CONGES_CODES=['CA','RTT'];meds.forEach(function(med){moisList.forEach(function(m){if(!firstPage)doc.addPage();firstPage=false;var y=MT,days=getMoisDays(m.year,m.month);doc.setFillColor(44,74,114);doc.rect(ML,y,W,9,'F');doc.setTextColor(255,255,255);doc.setFontSize(11);doc.setFont('helvetica','bold');doc.text((congesOnly?'PLANNING CA / RTT - ':'PLANNING - ')+m.label.toUpperCase(),PW/2,y+6,{align:'center'});y+=10;doc.setFillColor(220,230,245);doc.rect(ML,y,W,7,'F');doc.setTextColor(44,74,114);doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text(med.nom+' ('+med.initiales+') - '+med.temps+'%',PW/2,y+4.8,{align:'center'});y+=8;var slotsForPDF=congesOnly?allSlots.filter(function(s){return s.jours!=='we';}):allSlots;var nb=days.length+1,availH=PH-y-MB,fs=8,pad_=1.5,found=false;for(var fi=0;fi<8&&!found;fi++){var f=8-fi*0.5;for(var pi=0;pi<6&&!found;pi++){var pp=1.5-pi*0.2;if(pp<0.4)break;if((f*0.352+pp*2+0.3)*nb<=availH){fs=f;pad_=pp;found=true;}}}var headRow=congesOnly?['Date','Jour','Matin','Apres-midi']:['Date','Jour'].concat(slotsForPDF.map(function(s){return s.court;})).concat(['VAC']);var body=[],totalVAC=0,vacTheo=(140*(med.temps/100)).toFixed(1);days.forEach(function(d){var ds=dateStr(d),fer=isFerie(ds),we=isWE(d),rowCells=[],rowVAC=0;slotsForPDF.forEach(function(s,si){var val=getCell(qId,med.id,ds,s.id)||'';if(congesOnly&&val&&CONGES_CODES.indexOf(val)<0)val='';var act=val?ACT_MAP[val]:null;if(act&&si>0){rowVAC+=act.coeff;totalVAC+=act.coeff;}rowCells.push(val);});if(congesOnly)rowCells=[rowCells[Math.min(1,rowCells.length-1)]||'',rowCells[Math.min(2,rowCells.length-1)]||''];var ds2=d.getDate()+'-'+MOIS_COURT[d.getMonth()],js=JOURS_LONG[d.getDay()].substring(0,4).toUpperCase()+'.';if(congesOnly)body.push([ds2,js,rowCells[0],rowCells[1],fer,we,false,isVacSco(ds)]);else{var fullRow=[ds2,js].concat(rowCells).concat([rowVAC>0?rowVAC.toFixed(2):'',fer,we,false,isVacSco(ds)]);body.push(fullRow);}});var lastRow=congesOnly?['','TOTAL','','',false,false,false,false]:['','TOTAL VAC'].concat(slotsForPDF.map(function(){return'';})).concat([totalVAC.toFixed(2),false,false,false,false]);body.push(lastRow);var metaOffset=congesOnly?4:2+slotsForPDF.length+1;var dB=body.map(function(r){return r.slice(0,metaOffset);});var sw=(W-16-14)/Math.max(1,slotsForPDF.length);var cSF={0:{halign:'left',cellWidth:16,fontStyle:'bold'},1:{halign:'left',cellWidth:14}};slotsForPDF.forEach(function(s,i){cSF[i+2]={cellWidth:sw};});if(!congesOnly)cSF[slotsForPDF.length+2]={cellWidth:14,fontStyle:'bold'};doc.autoTable({head:[headRow],body:dB,startY:y,margin:{left:ML,right:MR},styles:{fontSize:fs,cellPadding:pad_,valign:'middle',halign:'center',lineColor:[180,180,180],lineWidth:0.2},headStyles:{fillColor:[44,74,114],textColor:255,fontStyle:'bold',fontSize:Math.max(fs,6),halign:'center',cellPadding:pad_},columnStyles:cSF,didParseCell:function(data){if(data.section==='body'){var r=body[data.row.index];if(!r)return;var cS=2,cE=congesOnly?3:1+slotsForPDF.length;if(data.column.index>=cS&&data.column.index<=cE){var val=data.cell.raw;if(val&&val!==''){var act=ACT_MAP[val];if(act&&act.bg){var hex=act.bg.replace('#','');data.cell.styles.fillColor=[parseInt(hex.substring(0,2),16),parseInt(hex.substring(2,4),16),parseInt(hex.substring(4,6),16)];var hx=(act.color||'#333333').replace('#','');data.cell.styles.textColor=[parseInt(hx.substring(0,2),16),parseInt(hx.substring(2,4),16),parseInt(hx.substring(4,6),16)];data.cell.styles.fontStyle='bold';}}}var fi2=congesOnly?4:2+slotsForPDF.length+1,wi=fi2+1,vi=fi2+3;if(r[fi2])data.cell.styles.fillColor=[255,228,228];else if(r[wi])data.cell.styles.fillColor=[255,248,230];else if(r[vi])data.cell.styles.fillColor=[237,233,254];if(data.row.index===body.length-1){data.cell.styles.fillColor=[216,228,255];data.cell.styles.fontStyle='bold';}}},theme:'grid'});doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(150,150,150);doc.text('VAC théorique: '+vacTheo+' | Généré le '+new Date().toLocaleDateString('fr-FR'),PW-MR,PH-3,{align:'right'});});});doc.save((congesOnly?'planning_conges_rtt':'planning_individuel')+'_'+(moisVal&&moisVal!=='all'?moisVal:'quadrimestre')+'.pdf');}
+
+// ══════════════════════════════════════════════════════
+// SAUVEGARDE JSON
+// ══════════════════════════════════════════════════════
+function openSaveModal(){var now=new Date(),ts=now.toISOString().split('T')[0]+'_'+pad(now.getHours())+'h'+pad(now.getMinutes()),fname='planning_'+ts+'.json';document.getElementById('save-filename-display').textContent='Fichier : '+fname;document.getElementById('save-overlay').dataset.fname=fname;document.getElementById('save-overlay').classList.add('open');}
+function closeSaveModal(){document.getElementById('save-overlay').classList.remove('open');}
+function confirmSaveModal(){var fname=document.getElementById('save-overlay').dataset.fname||'planning_data.json';var blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;a.click();localStorage.setItem('lastJsonExport',new Date().toISOString());updateLastExportLabel();closeSaveModal();}
+function importJSON(input){var file=input.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(e){try{var data=JSON.parse(e.target.result);if(!data.quadrimestres||!data.medecins||!data.planning)throw new Error('Structure incorrecte');DB=data;migrateDB();scheduleSave();rebuildActMap();populateAllSelects();renderConfig();renderPlanning();alert('Import réussi — '+DB.medecins.length+' médecins, '+DB.quadrimestres.length+' quadrimestre(s).');}catch(err){alert('Erreur import JSON : '+err.message);}};reader.readAsText(file);}
+function resetAll(){if(!confirm('Tout réinitialiser ? Action irréversible.'))return;localStorage.removeItem('planningMed');idbDelete().then(function(){location.reload();});}
+function updateLastExportLabel(){var el=document.getElementById('last-export-lbl');if(!el)return;var last=localStorage.getItem('lastJsonExport');if(!last){el.textContent='';return;}var d=new Date(last),diff=Math.round((Date.now()-d)/60000);el.textContent='Dernier export JSON : '+(diff<1?'à l\'instant':diff<60?'il y a '+diff+' min':'il y a '+Math.round(diff/60)+'h');}
+
+// ══════════════════════════════════════════════════════
+// NAV & LÉGENDE
+// ══════════════════════════════════════════════════════
+function showPage(name){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});document.querySelectorAll('#nav button').forEach(function(b){b.classList.remove('active');});document.getElementById('page-'+name).classList.add('active');var btn=document.getElementById('btn-'+name);if(btn)btn.classList.add('active');var renders={planning:renderPlanning,garde:renderGarde,individuel:renderIndividuel,declaratif:renderDeclaratif,stats:renderStats,services:renderServices,config:renderConfig,archives:renderArchives};if(renders[name])renders[name]();}
+function toggleLegend(){var el=document.getElementById('legend-box');el.style.display=el.style.display==='none'?'flex':'none';}
+function buildLegend(){var html='',types=DB.types||DEFAULT_TYPES;types.forEach(function(t){var acts=ACTIVITES.filter(function(a){return a.type===t.id&&!a.archived;});if(!acts.length)return;html+='<div style="width:100%;margin:4px 0 2px;font-size:11px;font-weight:700;color:'+t.color+'">'+(t.icon||'')+' '+escHtml(t.label)+'</div>';acts.forEach(function(a){html+='<span class="badge" style="margin:2px;'+actStyle(a)+'" title="'+escHtml(a.label)+'">'+escHtml(a.code)+(a.coeff?' ('+a.coeff+')':'')+'</span>';});});document.getElementById('legend-items').innerHTML=html;}
+
+// ══════════════════════════════════════════════════════
+// AUTHENTIFICATION
+// ══════════════════════════════════════════════════════
+function showLoginScreen(){
+  document.getElementById('login-overlay').style.display='flex';
+  setTimeout(function(){document.getElementById('login-input').focus();},100);
+}
+function hideLoginScreen(){
+  document.getElementById('login-overlay').style.display='none';
+}
+function doLogin(){
+  var login=document.getElementById('login-input').value.trim().toLowerCase();
+  var password=document.getElementById('password-input').value;
+  var errEl=document.getElementById('login-error');
+  errEl.textContent='';
+  if(!login||!password){errEl.textContent='Veuillez remplir tous les champs.';return;}
+  errEl.textContent='Vérification...';
+  fetch(SP_AUTH_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})
+    .then(function(r){return r.text();})
+    .then(function(txt){
+      var data=JSON.parse(txt);
+      var users=data.users||[];
+      var user=users.find(function(u){return u.login.toLowerCase()===login&&u.password===password;});
+      if(user){
+        _currentUser=user;
+        try{sessionStorage.setItem('planningUser',JSON.stringify(user));}catch(e){}
+        hideLoginScreen();
+        document.getElementById('nav-user').textContent='👤 '+user.login;
+        document.getElementById('nav-logout').style.display='inline-block';
+        document.getElementById('nav-pwd').style.display='inline-block';
+        errEl.textContent='';
+      } else {
+        errEl.textContent='Identifiant ou mot de passe incorrect.';
+        document.getElementById('password-input').value='';
+      }
+    })
+    .catch(function(){
+      errEl.textContent='Erreur de connexion au serveur. Réessayez.';
+    });
+}
+function doLogout(){
+  _currentUser=null;
+  try{sessionStorage.removeItem('planningUser');}catch(e){}
+  document.getElementById('nav-user').textContent='';
+  document.getElementById('nav-logout').style.display='none';
+  document.getElementById('nav-pwd').style.display='none';
+  document.getElementById('login-input').value='';
+  document.getElementById('password-input').value='';
+  document.getElementById('login-error').textContent='';
+  showLoginScreen();
+}
+function openPwdModal(){
+  document.getElementById('pwd-old').value='';
+  document.getElementById('pwd-new').value='';
+  document.getElementById('pwd-confirm').value='';
+  document.getElementById('pwd-error').textContent='';
+  document.getElementById('pwd-success').textContent='';
+  document.getElementById('pwd-modal').classList.add('open');
+  setTimeout(function(){document.getElementById('pwd-old').focus();},100);
+}
+function closePwdModal(){
+  document.getElementById('pwd-modal').classList.remove('open');
+}
+function doChangePassword(){
+  var oldPwd=document.getElementById('pwd-old').value;
+  var newPwd=document.getElementById('pwd-new').value;
+  var confirm=document.getElementById('pwd-confirm').value;
+  var errEl=document.getElementById('pwd-error');
+  var okEl=document.getElementById('pwd-success');
+  errEl.textContent='';okEl.textContent='';
+  if(!oldPwd||!newPwd||!confirm){errEl.textContent='Veuillez remplir tous les champs.';return;}
+  if(oldPwd!==_currentUser.password){errEl.textContent='Mot de passe actuel incorrect.';return;}
+  if(newPwd.length<6){errEl.textContent='Le nouveau mot de passe doit faire au moins 6 caractères.';return;}
+  if(newPwd!==confirm){errEl.textContent='Les deux nouveaux mots de passe ne correspondent pas.';return;}
+  okEl.textContent='Mise à jour en cours...';
+  // Relire users.json, modifier, réécrire
+  fetch(SP_AUTH_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})
+    .then(function(r){return r.text();})
+    .then(function(txt){
+      var data=JSON.parse(txt);
+      var users=data.users||[];
+      var idx=users.findIndex(function(u){return u.login===_currentUser.login;});
+      if(idx<0){errEl.textContent='Utilisateur introuvable.';okEl.textContent='';return;}
+      users[idx].password=newPwd;
+      return fetch(SP_WRITE_USERS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+        .then(function(r){
+          if(r.ok){
+            _currentUser.password=newPwd;
+            try{sessionStorage.setItem('planningUser',JSON.stringify(_currentUser));}catch(e){}
+            okEl.textContent='✅ Mot de passe modifié avec succès !';
+            errEl.textContent='';
+            setTimeout(closePwdModal,1500);
+          } else {
+            errEl.textContent='Erreur lors de la sauvegarde.';okEl.textContent='';
+          }
+        });
+    })
+    .catch(function(){errEl.textContent='Erreur de connexion.';okEl.textContent='';});
+}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+function loadSampleData(){DB={quadrimestres:[{id:'q1',nom:'3e Quadrimestre 2025-2026',debut:'2026-02-01',fin:'2026-05-31',archived:false}],medecins:[{id:'CMP',nom:'Claire Marie PILARD',initiales:'CMP',raccourci:'8870',telPro:'',telPerso:'06.88.96.51.19',temps:60,dateDebut:'',dateFin:'',archived:false},{id:'CB',nom:'Clotilde BERTRAND',initiales:'CB',raccourci:'8833',telPro:'',telPerso:'06.88.96.19.40',temps:100,dateDebut:'',dateFin:'',archived:false},{id:'NB',nom:'Nicolas BOIMOND',initiales:'NB',raccourci:'8863',telPro:'06.11.79.52.84',telPerso:'06.60.38.70.63',temps:100,dateDebut:'',dateFin:'',archived:false},{id:'SV',nom:'Simon VELUZAT',initiales:'SV',raccourci:'8892',telPro:'06.21.20.05.96',telPerso:'06.62.33.88.60',temps:100,dateDebut:'',dateFin:'',archived:false}],feries:[],planning:{},notes:{},notesDecl:{}};migrateDB();getJoursFeriesFrance(2026).forEach(function(f){var fd=parseDate(f.date);if(fd>=parseDate('2026-02-01')&&fd<=parseDate('2026-05-31'))DB.feries.push(f);});scheduleSave();}
+function init(){initStorage().then(function(){if(!DB.quadrimestres||!DB.quadrimestres.length)loadSampleData();migrateDB();updateAppName();rebuildActMap();populateAllSelects();renderConfig();renderPlanning();buildLegend();updateLastExportLabel();applyTabsVisibility();setInterval(doSave,60000);setInterval(updateLastExportLabel,60000);startAutoRefresh();
+  // Vérifier si session déjà active
+  try{var s=sessionStorage.getItem('planningUser');if(s){_currentUser=JSON.parse(s);document.getElementById('nav-user').textContent='👤 '+_currentUser.login;document.getElementById('nav-logout').style.display='inline-block';document.getElementById('nav-pwd').style.display='inline-block';}else{showLoginScreen();}}catch(e){showLoginScreen();}
+});}
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
+</script>
+</body>
+</html>
